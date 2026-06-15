@@ -66,6 +66,9 @@ DB_PATH = os.path.join(BASE_DIR, "bebidas.db")
 MAX_PRODUTO = 50
 MAX_TIPO = 30
 MAX_VOLUME = 99999  # inteiro com ate 5 digitos
+MAX_NOME = 60       # nome do cocktail
+MAX_TACARIA = 40    # tipo de copo
+MAX_QUANTIDADE = 99999.0  # ml por ingrediente
 
 app = Flask(__name__)
 # Chave usada apenas para flash messages (sessao). Pode ser sobrescrita por env.
@@ -80,6 +83,7 @@ def get_db():
     if "db" not in g:
         g.db = sqlite3.connect(DB_PATH)
         g.db.row_factory = sqlite3.Row
+        g.db.execute("PRAGMA foreign_keys = ON")
     return g.db
 
 
@@ -92,9 +96,10 @@ def close_db(_exc):
 
 
 def init_db():
-    """Cria a tabela 'produtos' caso ainda nao exista."""
+    """Cria as tabelas caso ainda nao existam."""
     try:
         with sqlite3.connect(DB_PATH) as conn:
+            conn.execute("PRAGMA foreign_keys = ON")
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS produtos (
@@ -102,6 +107,28 @@ def init_db():
                     produto   TEXT    NOT NULL,
                     tipo      TEXT    NOT NULL,
                     volume_ml INTEGER NOT NULL
+                )
+                """
+            )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS cocktails (
+                    id      INTEGER PRIMARY KEY AUTOINCREMENT,
+                    nome    TEXT NOT NULL,
+                    tacaria TEXT NOT NULL,
+                    receita TEXT NOT NULL
+                )
+                """
+            )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS cocktail_ingredientes (
+                    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                    cocktail_id   INTEGER NOT NULL,
+                    produto_id    INTEGER NOT NULL,
+                    quantidade_ml REAL    NOT NULL,
+                    FOREIGN KEY (cocktail_id) REFERENCES cocktails (id) ON DELETE CASCADE,
+                    FOREIGN KEY (produto_id) REFERENCES produtos (id)
                 )
                 """
             )
@@ -133,6 +160,64 @@ def listar_produtos():
         "SELECT id, produto, tipo, volume_ml FROM produtos ORDER BY id"
     )
     return cur.fetchall()
+
+
+def inserir_cocktail(nome, tacaria, receita, ingredientes):
+    """Insere um cocktail e seus ingredientes numa unica transacao.
+
+    'ingredientes' e uma lista de tuplas (produto_id, quantidade_ml).
+    Retorna o ID do cocktail criado.
+    """
+    db = get_db()
+    try:
+        cur = db.execute(
+            "INSERT INTO cocktails (nome, tacaria, receita) VALUES (?, ?, ?)",
+            (nome, tacaria, receita),
+        )
+        cocktail_id = cur.lastrowid
+        db.executemany(
+            "INSERT INTO cocktail_ingredientes (cocktail_id, produto_id, quantidade_ml) "
+            "VALUES (?, ?, ?)",
+            [(cocktail_id, pid, qtd) for pid, qtd in ingredientes],
+        )
+        db.commit()
+        return cocktail_id
+    except sqlite3.Error:
+        db.rollback()
+        raise
+
+
+def listar_cocktails():
+    """Retorna os cocktails com seus ingredientes agrupados.
+
+    Cada item: dict(id, nome, tacaria, receita, ingredientes=[(produto, qtd)]).
+    """
+    db = get_db()
+    cocktails = db.execute(
+        "SELECT id, nome, tacaria, receita FROM cocktails ORDER BY id"
+    ).fetchall()
+    resultado = []
+    for c in cocktails:
+        ingredientes = db.execute(
+            """
+            SELECT p.produto AS produto, ci.quantidade_ml AS quantidade_ml
+            FROM cocktail_ingredientes ci
+            JOIN produtos p ON p.id = ci.produto_id
+            WHERE ci.cocktail_id = ?
+            ORDER BY ci.id
+            """,
+            (c["id"],),
+        ).fetchall()
+        resultado.append(
+            {
+                "id": c["id"],
+                "nome": c["nome"],
+                "tacaria": c["tacaria"],
+                "receita": c["receita"],
+                "ingredientes": ingredientes,
+            }
+        )
+    return resultado
 
 
 # --------------------------------------------------------------------------- #
@@ -187,6 +272,56 @@ def visualizar():
     return render_template("visualizar.html", produtos=produtos, ativo="visualizar")
 
 
+@app.route("/receitas/cocktails/adicionar", methods=["GET", "POST"])
+def adicionar_cocktail():
+    """Adiciona um cocktail: ingredientes (a partir dos produtos), taçaria e receita."""
+    produtos = listar_produtos()
+
+    if request.method == "POST":
+        nome = (request.form.get("nome") or "").strip()
+        tacaria = (request.form.get("tacaria") or "").strip()
+        receita = (request.form.get("receita") or "").strip()
+        produto_ids = request.form.getlist("produto_id")
+        quantidades = request.form.getlist("quantidade")
+
+        erro, ingredientes = _validar_cocktail(
+            nome, tacaria, receita, produto_ids, quantidades, produtos
+        )
+        if erro:
+            flash(erro, "erro")
+            return render_template(
+                "adicionar_cocktail.html",
+                produtos=produtos,
+                form={"nome": nome, "tacaria": tacaria, "receita": receita},
+                ativo="cocktails",
+            )
+
+        try:
+            novo_id = inserir_cocktail(nome, tacaria, receita, ingredientes)
+        except (sqlite3.Error, RuntimeError) as exc:
+            flash(f"Erro ao salvar no banco: {exc}", "erro")
+            return redirect(url_for("adicionar_cocktail"))
+
+        flash(f"Cocktail '{nome}' adicionado com sucesso! ID: {novo_id:05d}", "sucesso")
+        return redirect(url_for("adicionar_cocktail"))
+
+    return render_template(
+        "adicionar_cocktail.html",
+        produtos=produtos,
+        form={"nome": "", "tacaria": "", "receita": ""},
+        ativo="cocktails",
+    )
+
+
+@app.route("/receitas/cocktails")
+def visualizar_cocktails():
+    """Lista os cocktails cadastrados com seus ingredientes."""
+    cocktails = listar_cocktails()
+    return render_template(
+        "visualizar_cocktails.html", cocktails=cocktails, ativo="ver_cocktails"
+    )
+
+
 def _validar(produto, tipo, volume_txt):
     """Valida os campos. Retorna mensagem de erro (str) ou None se tudo ok."""
     if not produto:
@@ -207,10 +342,65 @@ def _validar(produto, tipo, volume_txt):
     return None
 
 
+def _validar_cocktail(nome, tacaria, receita, produto_ids, quantidades, produtos):
+    """Valida os dados do cocktail.
+
+    Retorna (mensagem_erro, ingredientes). Em caso de sucesso a mensagem e None
+    e 'ingredientes' e uma lista de tuplas (produto_id, quantidade_ml).
+    """
+    if not nome:
+        return "O campo 'Nome do cocktail' e obrigatorio.", []
+    if len(nome) > MAX_NOME:
+        return f"'Nome do cocktail' deve ter no maximo {MAX_NOME} caracteres.", []
+    if not tacaria:
+        return "O campo 'Taçaria' e obrigatorio.", []
+    if len(tacaria) > MAX_TACARIA:
+        return f"'Taçaria' deve ter no maximo {MAX_TACARIA} caracteres.", []
+    if not receita:
+        return "O campo 'Receita' e obrigatorio.", []
+
+    ids_validos = {p["id"] for p in produtos}
+    ingredientes = []
+    for pid_txt, qtd_txt in zip(produto_ids, quantidades):
+        pid_txt = (pid_txt or "").strip()
+        qtd_txt = (qtd_txt or "").strip().replace(",", ".")
+        # Ignora linhas totalmente vazias.
+        if not pid_txt and not qtd_txt:
+            continue
+        if not pid_txt:
+            return "Selecione o produto de todos os ingredientes.", []
+        try:
+            pid = int(pid_txt)
+        except ValueError:
+            return "Ingrediente invalido.", []
+        if pid not in ids_validos:
+            return "Ingrediente invalido: produto nao cadastrado.", []
+        if not qtd_txt:
+            return "Informe a quantidade (ml) de cada ingrediente.", []
+        try:
+            qtd = float(qtd_txt)
+        except ValueError:
+            return "'Quantidade' deve ser um numero (ml).", []
+        if qtd <= 0 or qtd > MAX_QUANTIDADE:
+            return f"'Quantidade' deve ser maior que 0 e ate {int(MAX_QUANTIDADE)}.", []
+        ingredientes.append((pid, qtd))
+
+    if not ingredientes:
+        return "Adicione pelo menos um ingrediente.", []
+    return None, ingredientes
+
+
 # Disponibiliza os limites para os templates (atributos maxlength etc.).
 @app.context_processor
 def inject_limits():
-    return {"MAX_PRODUTO": MAX_PRODUTO, "MAX_TIPO": MAX_TIPO, "MAX_VOLUME": MAX_VOLUME}
+    return {
+        "MAX_PRODUTO": MAX_PRODUTO,
+        "MAX_TIPO": MAX_TIPO,
+        "MAX_VOLUME": MAX_VOLUME,
+        "MAX_NOME": MAX_NOME,
+        "MAX_TACARIA": MAX_TACARIA,
+        "MAX_QUANTIDADE": MAX_QUANTIDADE,
+    }
 
 
 def main():

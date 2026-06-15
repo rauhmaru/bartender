@@ -14,6 +14,12 @@ com interface no navegador (Flask) e persistência em SQLite.
 - **Visualizar produto**
   - Tabela com colunas ID, Produto, Tipo, Volume (ml).
   - Contador de total e mensagem quando não há produtos.
+- **Adicionar receitas** (menu suspenso)
+  - **Adicionar cocktails**: nome, ingredientes (selecionados a partir dos
+    produtos cadastrados, múltiplos), quantidade em ml (numérico float por
+    ingrediente), taçaria (tipo de copo) e receita (modo de preparo).
+  - **Visualizar cocktails**: lista cada cocktail com ingredientes, quantidades,
+    taçaria e receita.
 
 ## Requisitos
 
@@ -43,12 +49,14 @@ O banco `bebidas.db` é criado automaticamente na primeira execução.
 ## Estrutura
 
 ```
-app.py                  # servidor Flask (rotas, validação, SQLite)
-requirements.txt        # dependências
+app.py                       # servidor Flask (rotas, validação, SQLite)
+requirements.txt             # dependências
 templates/
-  base.html             # layout + navegação + estilos
-  cadastrar.html        # formulário de cadastro
-  visualizar.html       # tabela de produtos
+  base.html                  # layout + navegação + estilos
+  cadastrar.html             # formulário de cadastro de produto
+  visualizar.html            # tabela de produtos
+  adicionar_cocktail.html    # formulário de cocktail (ingredientes dinâmicos)
+  visualizar_cocktails.html  # lista de cocktails
 ```
 
 ## Banco de dados
@@ -61,3 +69,21 @@ Tabela `produtos`:
 | `produto`   | TEXT (até 50)                     |
 | `tipo`      | TEXT (até 30)                     |
 | `volume_ml` | INTEGER (0–99999)                 |
+
+Tabela `cocktails`:
+
+| Campo     | Tipo                              |
+|-----------|-----------------------------------|
+| `id`      | INTEGER PRIMARY KEY AUTOINCREMENT |
+| `nome`    | TEXT                              |
+| `tacaria` | TEXT                              |
+| `receita` | TEXT                              |
+
+Tabela `cocktail_ingredientes` (relaciona cocktails e produtos):
+
+| Campo           | Tipo                                       |
+|-----------------|--------------------------------------------|
+| `id`            | INTEGER PRIMARY KEY AUTOINCREMENT          |
+| `cocktail_id`   | INTEGER → `cocktails.id` (ON DELETE CASCADE) |
+| `produto_id`    | INTEGER → `produtos.id`                     |
+| `quantidade_ml` | REAL (float, ml por ingrediente)           |

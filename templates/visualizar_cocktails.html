@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<div class="card">
+  <h2>Visualizar cocktails</h2>
+  {% if cocktails %}
+    {% for c in cocktails %}
+    <div style="border:1px solid #eceff2; border-radius:8px; padding:16px; margin-bottom:16px;">
+      <h3 style="margin:0 0 8px;">{{ "%05d"|format(c.id) }} — {{ c.nome }}</h3>
+      <p style="margin:4px 0;"><strong>Taçaria:</strong> {{ c.tacaria }}</p>
+      <p style="margin:4px 0;"><strong>Ingredientes:</strong></p>
+      <ul style="margin:4px 0 8px;">
+        {% for ing in c.ingredientes %}
+        <li>{{ ing["produto"] }} — {{ "%g"|format(ing["quantidade_ml"]) }} ml</li>
+        {% endfor %}
+      </ul>
+      <p style="margin:4px 0;"><strong>Receita:</strong></p>
+      <p style="margin:4px 0; white-space:pre-wrap;">{{ c.receita }}</p>
+    </div>
+    {% endfor %}
+    <p class="vazio">{{ cocktails|length }} cocktail(s) cadastrado(s).</p>
+  {% else %}
+    <p class="vazio">Nenhum cocktail cadastrado.</p>
+  {% endif %}
+  <div class="acoes">
+    <a class="btn" href="{{ url_for('adicionar_cocktail') }}">Adicionar cocktails</a>
+  </div>
+</div>
+{% endblock %}
