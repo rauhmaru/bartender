@@ -16,13 +16,7 @@
         </label>
         {% endfor %}
       </div>
-      <div class="filtro-modo">
-        <span>Mostrar receitas que contêm:</span>
-        <label><input type="radio" name="modo" value="todos"
-               {{ 'checked' if modo != 'qualquer' else '' }}> todos os selecionados</label>
-        <label><input type="radio" name="modo" value="qualquer"
-               {{ 'checked' if modo == 'qualquer' else '' }}> qualquer um deles</label>
-      </div>
+      <p class="filtro-ajuda">Exibe apenas as receitas que contêm todos os ingredientes selecionados.</p>
       <div class="filtro-acoes">
         <button type="submit">Filtrar</button>
         <a class="btn secundario" href="{{ url_for('visualizar_cocktails') }}">Limpar filtro</a>
@@ -50,7 +44,7 @@
       {{ cocktails|length }} cocktail(s){{ ' encontrado(s) com o filtro' if filtro_ativo else ' cadastrado(s)' }}.
     </p>
   {% elif filtro_ativo %}
-    <p class="vazio">Nenhuma receita corresponde aos ingredientes selecionados.</p>
+    <p class="vazio">Não existem receitas com os ingredientes selecionados.</p>
   {% else %}
     <p class="vazio">Nenhum cocktail cadastrado.</p>
   {% endif %}

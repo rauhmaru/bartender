@@ -324,29 +324,19 @@ def visualizar_cocktails():
         if valor.isdigit():
             selecionados.add(int(valor))
 
-    modo = request.args.get("modo", "todos")
-    if modo not in ("todos", "qualquer"):
-        modo = "todos"
-
     cocktails = listar_cocktails()
     if selecionados:
-        filtrados = []
-        for c in cocktails:
-            ids_ingredientes = {ing["produto_id"] for ing in c["ingredientes"]}
-            if modo == "qualquer":
-                corresponde = bool(selecionados & ids_ingredientes)
-            else:
-                corresponde = selecionados <= ids_ingredientes
-            if corresponde:
-                filtrados.append(c)
-        cocktails = filtrados
+        cocktails = [
+            c
+            for c in cocktails
+            if selecionados <= {ing["produto_id"] for ing in c["ingredientes"]}
+        ]
 
     return render_template(
         "visualizar_cocktails.html",
         cocktails=cocktails,
         produtos=produtos,
         selecionados=selecionados,
-        modo=modo,
         filtro_ativo=bool(selecionados),
         ativo="ver_cocktails",
     )

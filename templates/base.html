@@ -10,36 +10,34 @@
       font-family: "Segoe UI", system-ui, Arial, sans-serif;
       margin: 0; background: #f4f5f7; color: #222;
     }
-    header {
-      background: #2c3e50; color: #fff; padding: 16px 24px;
+    .layout { display: flex; min-height: 100vh; align-items: stretch; }
+    /* Menu lateral fixo */
+    .sidebar {
+      width: 240px; flex-shrink: 0; background: #2c3e50; color: #fff;
+      padding: 20px 0; display: flex; flex-direction: column;
     }
-    header h1 { margin: 0; font-size: 20px; }
-    nav { margin-top: 10px; }
-    nav a {
-      color: #cfd8e3; text-decoration: none; margin-right: 18px;
-      font-weight: 600; padding-bottom: 4px;
+    .sidebar h1 {
+      font-size: 18px; margin: 0 0 20px; padding: 0 20px; line-height: 1.3;
     }
-    nav a.ativo { color: #fff; border-bottom: 2px solid #1abc9c; }
-    /* Menu suspenso da navegação */
-    .dropdown { position: relative; display: inline-block; margin-right: 18px; }
-    .dropdown > .dropbtn {
-      color: #cfd8e3; font-weight: 600; cursor: pointer; padding-bottom: 4px;
-      background: none; border: none; font-size: inherit; font-family: inherit;
+    .sidebar .grupo { margin-bottom: 8px; }
+    .sidebar .grupo-titulo {
+      color: #8ea2b6; font-size: 12px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .5px; padding: 10px 20px 6px;
     }
-    .dropdown.ativo > .dropbtn { color: #fff; border-bottom: 2px solid #1abc9c; }
-    .dropdown-conteudo {
-      display: none; position: absolute; left: 0; top: 100%; margin-top: 6px;
-      background: #fff; min-width: 200px; border-radius: 6px; overflow: hidden;
-      box-shadow: 0 4px 12px rgba(0,0,0,.18); z-index: 10;
+    .sidebar a {
+      display: block; color: #cfd8e3; text-decoration: none;
+      padding: 10px 20px; font-weight: 600; border-left: 3px solid transparent;
     }
-    .dropdown:hover .dropdown-conteudo { display: block; }
-    .dropdown-conteudo a {
-      display: block; color: #2c3e50; padding: 10px 14px; margin: 0;
-      border-bottom: 1px solid #eef1f4;
+    .sidebar a:hover { background: #34495e; color: #fff; }
+    .sidebar a.ativo {
+      color: #fff; background: #34495e; border-left-color: #1abc9c;
     }
-    .dropdown-conteudo a:last-child { border-bottom: none; }
-    .dropdown-conteudo a:hover { background: #f0f3f6; }
+    .conteudo-area { flex: 1; min-width: 0; }
     main { max-width: 900px; margin: 24px auto; padding: 0 16px; }
+    @media (max-width: 720px) {
+      .layout { flex-direction: column; }
+      .sidebar { width: 100%; padding: 16px 0; }
+    }
     .card {
       background: #fff; border-radius: 8px; padding: 24px;
       box-shadow: 0 1px 3px rgba(0,0,0,.12);
@@ -78,13 +76,7 @@
       display: flex; align-items: center; gap: 8px; font-weight: 400; margin: 0;
     }
     .filtro-item input { width: auto; }
-    .filtro-modo {
-      margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px 16px;
-      align-items: center; font-size: 14px;
-    }
-    .filtro-modo span { font-weight: 600; }
-    .filtro-modo label { font-weight: 400; margin: 0; display: inline-flex; gap: 6px; }
-    .filtro-modo input { width: auto; }
+    .filtro-ajuda { margin-top: 10px; font-size: 13px; color: #777; }
     .filtro-acoes { margin-top: 14px; display: flex; gap: 10px; }
     .acoes { text-align: right; margin-top: 8px; }
     button, .btn {
@@ -106,32 +98,32 @@
   </style>
 </head>
 <body>
-  <header>
-    <h1>Gerenciador de Bebidas e Cocktails</h1>
-    <nav>
-      <div class="dropdown {{ 'ativo' if ativo in ['cadastrar', 'visualizar'] else '' }}">
-        <button type="button" class="dropbtn">Produtos &#9662;</button>
-        <div class="dropdown-conteudo">
-          <a href="{{ url_for('cadastrar') }}">Cadastrar produtos</a>
-          <a href="{{ url_for('visualizar') }}">Listar produtos</a>
+  <div class="layout">
+    <aside class="sidebar">
+      <h1>Gerenciador de Bebidas e Cocktails</h1>
+      <nav>
+        <div class="grupo">
+          <div class="grupo-titulo">Produtos</div>
+          <a class="{{ 'ativo' if ativo == 'cadastrar' else '' }}" href="{{ url_for('cadastrar') }}">Cadastrar produtos</a>
+          <a class="{{ 'ativo' if ativo == 'visualizar' else '' }}" href="{{ url_for('visualizar') }}">Listar produtos</a>
         </div>
-      </div>
-      <div class="dropdown {{ 'ativo' if ativo in ['cocktails', 'ver_cocktails'] else '' }}">
-        <button type="button" class="dropbtn">Receitas &#9662;</button>
-        <div class="dropdown-conteudo">
-          <a href="{{ url_for('adicionar_cocktail') }}">Cadastrar receitas</a>
-          <a href="{{ url_for('visualizar_cocktails') }}">Visualizar receitas</a>
+        <div class="grupo">
+          <div class="grupo-titulo">Receitas</div>
+          <a class="{{ 'ativo' if ativo == 'cocktails' else '' }}" href="{{ url_for('adicionar_cocktail') }}">Cadastrar receitas</a>
+          <a class="{{ 'ativo' if ativo == 'ver_cocktails' else '' }}" href="{{ url_for('visualizar_cocktails') }}">Visualizar receitas</a>
         </div>
-      </div>
-    </nav>
-  </header>
-  <main>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% for categoria, msg in messages %}
-        <div class="flash {{ categoria }}">{{ msg }}</div>
-      {% endfor %}
-    {% endwith %}
-    {% block conteudo %}{% endblock %}
-  </main>
+      </nav>
+    </aside>
+    <div class="conteudo-area">
+      <main>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% for categoria, msg in messages %}
+            <div class="flash {{ categoria }}">{{ msg }}</div>
+          {% endfor %}
+        {% endwith %}
+        {% block conteudo %}{% endblock %}
+      </main>
+    </div>
+  </div>
 </body>
 </html>
