@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<div class="card">
+  <h2>Cadastrar produto</h2>
+  <form method="post" action="{{ url_for('cadastrar') }}" novalidate>
+    <div class="campo">
+      <label for="id">ID</label>
+      <input type="text" id="id" name="id" value="{{ proximo_id }}" readonly>
+    </div>
+    <div class="campo">
+      <label for="produto">Produto</label>
+      <input type="text" id="produto" name="produto"
+             maxlength="{{ MAX_PRODUTO }}" required
+             value="{{ form.produto }}" placeholder="Ex.: Caipirinha">
+    </div>
+    <div class="campo">
+      <label for="tipo">Tipo</label>
+      <input type="text" id="tipo" name="tipo"
+             maxlength="{{ MAX_TIPO }}" required
+             value="{{ form.tipo }}" placeholder="Ex.: Coquetel">
+    </div>
+    <div class="campo">
+      <label for="volume_ml">Volume (ml)</label>
+      <input type="number" id="volume_ml" name="volume_ml"
+             min="0" max="{{ MAX_VOLUME }}" step="1" required
+             value="{{ form.volume_ml }}" placeholder="0 a {{ MAX_VOLUME }}">
+    </div>
+    <div class="acoes">
+      <a class="btn secundario" href="{{ url_for('cadastrar') }}">Limpar</a>
+      <button type="submit">Salvar</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

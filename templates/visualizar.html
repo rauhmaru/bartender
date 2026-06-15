@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<div class="card">
+  <h2>Visualizar produto</h2>
+  {% if produtos %}
+  <table>
+    <thead>
+      <tr>
+        <th class="center">ID</th>
+        <th>Produto</th>
+        <th>Tipo</th>
+        <th class="num">Volume (ml)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in produtos %}
+      <tr>
+        <td class="center">{{ "%05d"|format(p["id"]) }}</td>
+        <td>{{ p["produto"] }}</td>
+        <td>{{ p["tipo"] }}</td>
+        <td class="num">{{ p["volume_ml"] }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="vazio">{{ produtos|length }} produto(s) cadastrado(s).</p>
+  {% else %}
+  <p class="vazio">Nenhum produto cadastrado.</p>
+  {% endif %}
+  <div class="acoes">
+    <a class="btn" href="{{ url_for('visualizar') }}">Atualizar lista</a>
+  </div>
+</div>
+{% endblock %}
