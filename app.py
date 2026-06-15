@@ -200,7 +200,8 @@ def listar_cocktails():
     for c in cocktails:
         ingredientes = db.execute(
             """
-            SELECT p.produto AS produto, ci.quantidade_ml AS quantidade_ml
+            SELECT p.id AS produto_id, p.produto AS produto,
+                   ci.quantidade_ml AS quantidade_ml
             FROM cocktail_ingredientes ci
             JOIN produtos p ON p.id = ci.produto_id
             WHERE ci.cocktail_id = ?
@@ -315,10 +316,39 @@ def adicionar_cocktail():
 
 @app.route("/receitas/cocktails")
 def visualizar_cocktails():
-    """Lista os cocktails cadastrados com seus ingredientes."""
+    """Lista os cocktails, com filtro opcional por ingredientes (produtos)."""
+    produtos = listar_produtos()
+
+    selecionados = set()
+    for valor in request.args.getlist("ingredientes"):
+        if valor.isdigit():
+            selecionados.add(int(valor))
+
+    modo = request.args.get("modo", "todos")
+    if modo not in ("todos", "qualquer"):
+        modo = "todos"
+
     cocktails = listar_cocktails()
+    if selecionados:
+        filtrados = []
+        for c in cocktails:
+            ids_ingredientes = {ing["produto_id"] for ing in c["ingredientes"]}
+            if modo == "qualquer":
+                corresponde = bool(selecionados & ids_ingredientes)
+            else:
+                corresponde = selecionados <= ids_ingredientes
+            if corresponde:
+                filtrados.append(c)
+        cocktails = filtrados
+
     return render_template(
-        "visualizar_cocktails.html", cocktails=cocktails, ativo="ver_cocktails"
+        "visualizar_cocktails.html",
+        cocktails=cocktails,
+        produtos=produtos,
+        selecionados=selecionados,
+        modo=modo,
+        filtro_ativo=bool(selecionados),
+        ativo="ver_cocktails",
     )
 
 

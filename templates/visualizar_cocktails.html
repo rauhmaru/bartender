@@ -2,6 +2,35 @@
 {% block conteudo %}
 <div class="card">
   <h2>Visualizar cocktails</h2>
+
+  {% if produtos %}
+  <form method="get" action="{{ url_for('visualizar_cocktails') }}" class="filtro">
+    <fieldset>
+      <legend>Filtrar por ingredientes</legend>
+      <div class="filtro-ingredientes">
+        {% for p in produtos %}
+        <label class="filtro-item">
+          <input type="checkbox" name="ingredientes" value="{{ p['id'] }}"
+                 {{ 'checked' if p['id'] in selecionados else '' }}>
+          {{ p['produto'] }}
+        </label>
+        {% endfor %}
+      </div>
+      <div class="filtro-modo">
+        <span>Mostrar receitas que contêm:</span>
+        <label><input type="radio" name="modo" value="todos"
+               {{ 'checked' if modo != 'qualquer' else '' }}> todos os selecionados</label>
+        <label><input type="radio" name="modo" value="qualquer"
+               {{ 'checked' if modo == 'qualquer' else '' }}> qualquer um deles</label>
+      </div>
+      <div class="filtro-acoes">
+        <button type="submit">Filtrar</button>
+        <a class="btn secundario" href="{{ url_for('visualizar_cocktails') }}">Limpar filtro</a>
+      </div>
+    </fieldset>
+  </form>
+  {% endif %}
+
   {% if cocktails %}
     {% for c in cocktails %}
     <div style="border:1px solid #eceff2; border-radius:8px; padding:16px; margin-bottom:16px;">
@@ -17,7 +46,11 @@
       <p style="margin:4px 0; white-space:pre-wrap;">{{ c.receita }}</p>
     </div>
     {% endfor %}
-    <p class="vazio">{{ cocktails|length }} cocktail(s) cadastrado(s).</p>
+    <p class="vazio">
+      {{ cocktails|length }} cocktail(s){{ ' encontrado(s) com o filtro' if filtro_ativo else ' cadastrado(s)' }}.
+    </p>
+  {% elif filtro_ativo %}
+    <p class="vazio">Nenhuma receita corresponde aos ingredientes selecionados.</p>
   {% else %}
     <p class="vazio">Nenhum cocktail cadastrado.</p>
   {% endif %}

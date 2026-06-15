@@ -65,6 +65,27 @@
     .btn-add-ing {
       background: #34495e; margin-top: 4px;
     }
+    .filtro { margin-bottom: 20px; }
+    .filtro fieldset {
+      border: 1px solid #dfe4ea; border-radius: 8px; padding: 14px 16px;
+    }
+    .filtro legend { font-weight: 600; padding: 0 6px; color: #2c3e50; }
+    .filtro-ingredientes {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 6px 14px; max-height: 220px; overflow-y: auto; padding: 4px 2px;
+    }
+    .filtro-item {
+      display: flex; align-items: center; gap: 8px; font-weight: 400; margin: 0;
+    }
+    .filtro-item input { width: auto; }
+    .filtro-modo {
+      margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px 16px;
+      align-items: center; font-size: 14px;
+    }
+    .filtro-modo span { font-weight: 600; }
+    .filtro-modo label { font-weight: 400; margin: 0; display: inline-flex; gap: 6px; }
+    .filtro-modo input { width: auto; }
+    .filtro-acoes { margin-top: 14px; display: flex; gap: 10px; }
     .acoes { text-align: right; margin-top: 8px; }
     button, .btn {
       background: #1abc9c; color: #fff; border: none; padding: 9px 18px;
