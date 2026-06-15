@@ -10,6 +10,7 @@
         <th>Produto</th>
         <th>Tipo</th>
         <th class="num">Volume (ml)</th>
+        <th class="center">Ações</th>
       </tr>
     </thead>
     <tbody>
@@ -19,6 +20,13 @@
         <td>{{ p["produto"] }}</td>
         <td>{{ p["tipo"] }}</td>
         <td class="num">{{ p["volume_ml"] }}</td>
+        <td class="center">
+          <form class="form-inline" method="post"
+                action="{{ url_for('remover_produto_route', produto_id=p['id']) }}"
+                onsubmit="return confirm('Remover este produto?');">
+            <button type="submit" class="btn perigo">Remover</button>
+          </form>
+        </td>
       </tr>
       {% endfor %}
     </tbody>

@@ -21,8 +21,10 @@ from app import (
     init_db,
     inserir_cocktail,
     inserir_produto,
+    inserir_tipo,
     listar_cocktails,
     listar_produtos,
+    listar_tipos,
 )
 
 # --------------------------------------------------------------------------- #
@@ -338,6 +340,14 @@ def run():
                 existentes[nome] = inserir_produto(nome, tipo, volume)
                 novos_produtos += 1
 
+        tipos_existentes = {t["nome"] for t in listar_tipos()}
+        novos_tipos = 0
+        for _, tipo, _ in PRODUTOS:
+            if tipo and tipo not in tipos_existentes:
+                inserir_tipo(tipo)
+                tipos_existentes.add(tipo)
+                novos_tipos += 1
+
         nomes_cocktails = {c["nome"] for c in listar_cocktails()}
         novos_cocktails = 0
         for nome, tacaria, receita, ingredientes in COCKTAILS:
@@ -348,6 +358,7 @@ def run():
             novos_cocktails += 1
 
         print(f"Produtos novos inseridos: {novos_produtos}")
+        print(f"Tipos novos inseridos: {novos_tipos}")
         print(f"Cocktails novos inseridos: {novos_cocktails}")
         print(f"Total de produtos: {len(listar_produtos())}")
         print(f"Total de cocktails: {len(listar_cocktails())}")

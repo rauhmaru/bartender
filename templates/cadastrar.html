@@ -15,9 +15,19 @@
     </div>
     <div class="campo">
       <label for="tipo">Tipo</label>
-      <input type="text" id="tipo" name="tipo"
-             maxlength="{{ MAX_TIPO }}" required
-             value="{{ form.tipo }}" placeholder="Ex.: Coquetel">
+      {% if tipos %}
+      <select id="tipo" name="tipo" required>
+        <option value="" {{ 'selected' if not form.tipo else '' }} disabled>Selecione...</option>
+        {% for t in tipos %}
+        <option value="{{ t['nome'] }}" {{ 'selected' if form.tipo == t['nome'] else '' }}>{{ t['nome'] }}</option>
+        {% endfor %}
+      </select>
+      {% else %}
+      <p class="vazio" style="margin:0;">
+        Nenhum tipo cadastrado.
+        <a href="{{ url_for('cadastrar_tipo') }}">Cadastre um tipo de produto</a> primeiro.
+      </p>
+      {% endif %}
     </div>
     <div class="campo">
       <label for="volume_ml">Volume (ml)</label>

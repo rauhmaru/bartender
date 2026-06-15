@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<div class="card">
+  <h2>Cadastrar tipo de produto</h2>
+  <form method="post" action="{{ url_for('cadastrar_tipo') }}" novalidate>
+    <div class="campo">
+      <label for="nome">Tipo de produto</label>
+      <input type="text" id="nome" name="nome"
+             maxlength="{{ MAX_TIPO }}" required
+             placeholder="Ex.: Destilado">
+    </div>
+    <div class="acoes">
+      <button type="submit">Salvar</button>
+    </div>
+  </form>
+
+  <h3>Tipos cadastrados</h3>
+  {% if tipos %}
+  <table>
+    <thead>
+      <tr>
+        <th class="center">ID</th>
+        <th>Tipo</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in tipos %}
+      <tr>
+        <td class="center">{{ "%05d"|format(t["id"]) }}</td>
+        <td>{{ t["nome"] }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="vazio">{{ tipos|length }} tipo(s) cadastrado(s).</p>
+  {% else %}
+  <p class="vazio">Nenhum tipo cadastrado.</p>
+  {% endif %}
+</div>
+{% endblock %}

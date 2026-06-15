@@ -112,6 +112,22 @@ def init_db():
             )
             conn.execute(
                 """
+                CREATE TABLE IF NOT EXISTS tipos (
+                    id   INTEGER PRIMARY KEY AUTOINCREMENT,
+                    nome TEXT NOT NULL UNIQUE
+                )
+                """
+            )
+            # Popula a tabela de tipos com os tipos ja usados nos produtos.
+            conn.execute(
+                """
+                INSERT OR IGNORE INTO tipos (nome)
+                SELECT DISTINCT tipo FROM produtos
+                WHERE tipo IS NOT NULL AND TRIM(tipo) <> ''
+                """
+            )
+            conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS cocktails (
                     id      INTEGER PRIMARY KEY AUTOINCREMENT,
                     nome    TEXT NOT NULL,
@@ -160,6 +176,36 @@ def listar_produtos():
         "SELECT id, produto, tipo, volume_ml FROM produtos ORDER BY id"
     )
     return cur.fetchall()
+
+
+def listar_tipos():
+    """Retorna a lista de tipos de produto cadastrados (id, nome)."""
+    cur = get_db().execute(
+        "SELECT id, nome FROM tipos ORDER BY nome COLLATE NOCASE"
+    )
+    return cur.fetchall()
+
+
+def inserir_tipo(nome):
+    """Insere um novo tipo de produto e retorna o ID gerado."""
+    db = get_db()
+    cur = db.execute("INSERT INTO tipos (nome) VALUES (?)", (nome,))
+    db.commit()
+    return cur.lastrowid
+
+
+def remover_produto(produto_id):
+    """Remove um produto pelo ID."""
+    db = get_db()
+    db.execute("DELETE FROM produtos WHERE id = ?", (produto_id,))
+    db.commit()
+
+
+def remover_cocktail(cocktail_id):
+    """Remove um cocktail (e seus ingredientes, via cascade) pelo ID."""
+    db = get_db()
+    db.execute("DELETE FROM cocktails WHERE id = ?", (cocktail_id,))
+    db.commit()
 
 
 def inserir_cocktail(nome, tacaria, receita, ingredientes):
@@ -233,18 +279,21 @@ def index():
 @app.route("/cadastrar", methods=["GET", "POST"])
 def cadastrar():
     """Tela de cadastro de produto (GET) e processamento do envio (POST)."""
+    tipos = listar_tipos()
     if request.method == "POST":
         produto = (request.form.get("produto") or "").strip()
         tipo = (request.form.get("tipo") or "").strip()
         volume_txt = (request.form.get("volume_ml") or "").strip()
 
-        erro = _validar(produto, tipo, volume_txt)
+        tipos_validos = {t["nome"] for t in tipos}
+        erro = _validar(produto, tipo, volume_txt, tipos_validos)
         if erro:
             flash(erro, "erro")
             # Reexibe o formulario preservando o que foi digitado.
             return render_template(
                 "cadastrar.html",
                 proximo_id=f"{proximo_id():05d}",
+                tipos=tipos,
                 form={"produto": produto, "tipo": tipo, "volume_ml": volume_txt},
                 ativo="cadastrar",
             )
@@ -261,8 +310,42 @@ def cadastrar():
     return render_template(
         "cadastrar.html",
         proximo_id=f"{proximo_id():05d}",
+        tipos=tipos,
         form={"produto": "", "tipo": "", "volume_ml": ""},
         ativo="cadastrar",
+    )
+
+
+@app.route("/tipos", methods=["GET", "POST"])
+def cadastrar_tipo():
+    """Tela de cadastro de tipos de produto."""
+    if request.method == "POST":
+        nome = (request.form.get("nome") or "").strip()
+        if not nome:
+            flash("O campo 'Tipo de produto' e obrigatorio.", "erro")
+            return redirect(url_for("cadastrar_tipo"))
+        if len(nome) > MAX_TIPO:
+            flash(
+                f"'Tipo de produto' deve ter no maximo {MAX_TIPO} caracteres.",
+                "erro",
+            )
+            return redirect(url_for("cadastrar_tipo"))
+        try:
+            inserir_tipo(nome)
+        except sqlite3.IntegrityError:
+            flash(f"O tipo '{nome}' ja esta cadastrado.", "erro")
+            return redirect(url_for("cadastrar_tipo"))
+        except (sqlite3.Error, RuntimeError) as exc:
+            flash(f"Erro ao salvar no banco: {exc}", "erro")
+            return redirect(url_for("cadastrar_tipo"))
+
+        flash(f"Tipo de produto '{nome}' cadastrado com sucesso!", "sucesso")
+        return redirect(url_for("cadastrar_tipo"))
+
+    return render_template(
+        "cadastrar_tipo.html",
+        tipos=listar_tipos(),
+        ativo="cadastrar_tipo",
     )
 
 
@@ -271,6 +354,25 @@ def visualizar():
     """Tela de visualizacao dos produtos cadastrados."""
     produtos = listar_produtos()
     return render_template("visualizar.html", produtos=produtos, ativo="visualizar")
+
+
+@app.route("/visualizar/<int:produto_id>/remover", methods=["POST"])
+def remover_produto_route(produto_id):
+    """Remove um produto. Bloqueia se ele estiver em uso em alguma receita."""
+    try:
+        remover_produto(produto_id)
+    except sqlite3.IntegrityError:
+        flash(
+            "Nao e possivel remover: o produto esta em uso em uma ou mais receitas.",
+            "erro",
+        )
+        return redirect(url_for("visualizar"))
+    except (sqlite3.Error, RuntimeError) as exc:
+        flash(f"Erro ao remover: {exc}", "erro")
+        return redirect(url_for("visualizar"))
+
+    flash("Produto removido com sucesso.", "sucesso")
+    return redirect(url_for("visualizar"))
 
 
 @app.route("/receitas/cocktails/adicionar", methods=["GET", "POST"])
@@ -342,7 +444,20 @@ def visualizar_cocktails():
     )
 
 
-def _validar(produto, tipo, volume_txt):
+@app.route("/receitas/cocktails/<int:cocktail_id>/remover", methods=["POST"])
+def remover_cocktail_route(cocktail_id):
+    """Remove uma receita (cocktail) e seus ingredientes."""
+    try:
+        remover_cocktail(cocktail_id)
+    except (sqlite3.Error, RuntimeError) as exc:
+        flash(f"Erro ao remover: {exc}", "erro")
+        return redirect(url_for("visualizar_cocktails"))
+
+    flash("Receita removida com sucesso.", "sucesso")
+    return redirect(url_for("visualizar_cocktails"))
+
+
+def _validar(produto, tipo, volume_txt, tipos_validos=None):
     """Valida os campos. Retorna mensagem de erro (str) ou None se tudo ok."""
     if not produto:
         return "O campo 'Produto' e obrigatorio."
@@ -352,6 +467,8 @@ def _validar(produto, tipo, volume_txt):
         return "O campo 'Tipo' e obrigatorio."
     if len(tipo) > MAX_TIPO:
         return f"'Tipo' deve ter no maximo {MAX_TIPO} caracteres."
+    if tipos_validos is not None and tipo not in tipos_validos:
+        return "Selecione um tipo de produto valido."
     if not volume_txt:
         return "O campo 'Volume (ml)' e obrigatorio."
     if not volume_txt.isdigit():

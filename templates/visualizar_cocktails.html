@@ -28,7 +28,14 @@
   {% if cocktails %}
     {% for c in cocktails %}
     <div style="border:1px solid #eceff2; border-radius:8px; padding:16px; margin-bottom:16px;">
-      <h3 style="margin:0 0 8px;">{{ "%05d"|format(c.id) }} — {{ c.nome }}</h3>
+      <div class="item-titulo">
+        <h3>{{ "%05d"|format(c.id) }} — {{ c.nome }}</h3>
+        <form class="form-inline" method="post"
+              action="{{ url_for('remover_cocktail_route', cocktail_id=c.id) }}"
+              onsubmit="return confirm('Remover esta receita?');">
+          <button type="submit" class="btn perigo">Remover</button>
+        </form>
+      </div>
       <p style="margin:4px 0;"><strong>Taçaria:</strong> {{ c.tacaria }}</p>
       <p style="margin:4px 0;"><strong>Ingredientes:</strong></p>
       <ul style="margin:4px 0 8px;">
