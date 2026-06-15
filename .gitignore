@@ -1,0 +1,13 @@
+# Banco de dados gerado em tempo de execução
+bebidas.db
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Arquivos temporários
+cj.txt
+*.log

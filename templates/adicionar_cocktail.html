@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<div class="card">
+  <h2>Adicionar cocktails</h2>
+
+  {% if produtos %}
+  <form method="post" action="{{ url_for('adicionar_cocktail') }}" novalidate>
+    <div class="campo">
+      <label for="nome">Nome do cocktail</label>
+      <input type="text" id="nome" name="nome" maxlength="{{ MAX_NOME }}" required
+             value="{{ form.nome }}" placeholder="Ex.: Mojito">
+    </div>
+
+    <div class="campo">
+      <label>Ingredientes</label>
+      <div id="ingredientes">
+        <div class="ingrediente-linha">
+          <select name="produto_id" required>
+            <option value="">-- selecione um produto --</option>
+            {% for p in produtos %}
+            <option value="{{ p['id'] }}">{{ p['produto'] }} ({{ p['tipo'] }})</option>
+            {% endfor %}
+          </select>
+          <input type="number" name="quantidade" step="any" min="0"
+                 placeholder="Quantidade (ml)" required>
+          <button type="button" class="btn-remover" title="Remover" onclick="removerLinha(this)">&times;</button>
+        </div>
+      </div>
+      <button type="button" class="btn btn-add-ing" onclick="adicionarLinha()">+ Adicionar ingrediente</button>
+    </div>
+
+    <div class="campo">
+      <label for="tacaria">Taçaria</label>
+      <input type="text" id="tacaria" name="tacaria" maxlength="{{ MAX_TACARIA }}" required
+             value="{{ form.tacaria }}" placeholder="Ex.: Copo highball">
+    </div>
+
+    <div class="campo">
+      <label for="receita">Receita (modo de preparo)</label>
+      <textarea id="receita" name="receita" required
+                placeholder="Descreva como preparar o drink...">{{ form.receita }}</textarea>
+    </div>
+
+    <div class="acoes">
+      <a class="btn secundario" href="{{ url_for('adicionar_cocktail') }}">Limpar</a>
+      <button type="submit">Salvar</button>
+    </div>
+  </form>
+  {% else %}
+  <p class="vazio">
+    Nenhum produto cadastrado. Cadastre produtos antes de criar um cocktail,
+    pois os ingredientes têm origem nos produtos.
+  </p>
+  <div class="acoes">
+    <a class="btn" href="{{ url_for('cadastrar') }}">Cadastrar produto</a>
+  </div>
+  {% endif %}
+</div>
+
+<template id="modelo-ingrediente">
+  <div class="ingrediente-linha">
+    <select name="produto_id" required>
+      <option value="">-- selecione um produto --</option>
+      {% for p in produtos %}
+      <option value="{{ p['id'] }}">{{ p['produto'] }} ({{ p['tipo'] }})</option>
+      {% endfor %}
+    </select>
+    <input type="number" name="quantidade" step="any" min="0"
+           placeholder="Quantidade (ml)" required>
+    <button type="button" class="btn-remover" title="Remover" onclick="removerLinha(this)">&times;</button>
+  </div>
+</template>
+
+<script>
+  function adicionarLinha() {
+    var modelo = document.getElementById('modelo-ingrediente');
+    var clone = modelo.content.cloneNode(true);
+    document.getElementById('ingredientes').appendChild(clone);
+  }
+  function removerLinha(btn) {
+    var linhas = document.querySelectorAll('#ingredientes .ingrediente-linha');
+    if (linhas.length > 1) {
+      btn.closest('.ingrediente-linha').remove();
+    } else {
+      // Mantem ao menos uma linha: apenas limpa os campos.
+      var linha = btn.closest('.ingrediente-linha');
+      linha.querySelector('select').value = '';
+      linha.querySelector('input').value = '';
+    }
+  }
+</script>
+{% endblock %}
