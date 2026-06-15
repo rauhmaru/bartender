@@ -15,6 +15,8 @@
     .sidebar {
       width: 240px; flex-shrink: 0; background: #2c3e50; color: #fff;
       padding: 20px 0; display: flex; flex-direction: column;
+      position: sticky; top: 0; align-self: flex-start;
+      height: 100vh; overflow-y: auto;
     }
     .sidebar h1 {
       font-size: 18px; margin: 0 0 20px; padding: 0 20px; line-height: 1.3;
@@ -36,7 +38,10 @@
     main { max-width: 900px; margin: 24px auto; padding: 0 16px; }
     @media (max-width: 720px) {
       .layout { flex-direction: column; }
-      .sidebar { width: 100%; padding: 16px 0; }
+      .sidebar {
+        width: 100%; padding: 16px 0;
+        position: static; height: auto; overflow: visible;
+      }
     }
     .card {
       background: #fff; border-radius: 8px; padding: 24px;
