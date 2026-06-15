@@ -208,6 +208,25 @@ def remover_cocktail(cocktail_id):
     db.commit()
 
 
+def remover_tipo(tipo_id):
+    """Remove um tipo de produto pelo ID."""
+    db = get_db()
+    db.execute("DELETE FROM tipos WHERE id = ?", (tipo_id,))
+    db.commit()
+
+
+def tipo_em_uso(tipo_id):
+    """Retorna True se o tipo (pelo ID) estiver em uso por algum produto."""
+    db = get_db()
+    row = db.execute("SELECT nome FROM tipos WHERE id = ?", (tipo_id,)).fetchone()
+    if row is None:
+        return False
+    usados = db.execute(
+        "SELECT 1 FROM produtos WHERE tipo = ? LIMIT 1", (row["nome"],)
+    ).fetchone()
+    return usados is not None
+
+
 def inserir_cocktail(nome, tacaria, receita, ingredientes):
     """Insere um cocktail e seus ingredientes numa unica transacao.
 
@@ -347,6 +366,25 @@ def cadastrar_tipo():
         tipos=listar_tipos(),
         ativo="cadastrar_tipo",
     )
+
+
+@app.route("/tipos/<int:tipo_id>/remover", methods=["POST"])
+def remover_tipo_route(tipo_id):
+    """Remove um tipo de produto. Bloqueia se estiver em uso por algum produto."""
+    if tipo_em_uso(tipo_id):
+        flash(
+            "Nao e possivel remover: o tipo esta em uso em um ou mais produtos.",
+            "erro",
+        )
+        return redirect(url_for("cadastrar_tipo"))
+    try:
+        remover_tipo(tipo_id)
+    except (sqlite3.Error, RuntimeError) as exc:
+        flash(f"Erro ao remover: {exc}", "erro")
+        return redirect(url_for("cadastrar_tipo"))
+
+    flash("Tipo de produto removido com sucesso.", "sucesso")
+    return redirect(url_for("cadastrar_tipo"))
 
 
 @app.route("/visualizar")

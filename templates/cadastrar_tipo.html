@@ -21,6 +21,7 @@
       <tr>
         <th class="center">ID</th>
         <th>Tipo</th>
+        <th class="center">Ações</th>
       </tr>
     </thead>
     <tbody>
@@ -28,6 +29,13 @@
       <tr>
         <td class="center">{{ "%05d"|format(t["id"]) }}</td>
         <td>{{ t["nome"] }}</td>
+        <td class="center">
+          <form class="form-inline" method="post"
+                action="{{ url_for('remover_tipo_route', tipo_id=t['id']) }}"
+                onsubmit="return confirm('Remover este tipo de produto?');">
+            <button type="submit" class="btn perigo">Remover</button>
+          </form>
+        </td>
       </tr>
       {% endfor %}
     </tbody>
