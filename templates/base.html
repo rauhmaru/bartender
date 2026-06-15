@@ -88,13 +88,18 @@
   <header>
     <h1>Gerenciador de Bebidas e Cocktails</h1>
     <nav>
-      <a href="{{ url_for('cadastrar') }}" class="{{ 'ativo' if ativo == 'cadastrar' else '' }}">Cadastrar produto</a>
-      <a href="{{ url_for('visualizar') }}" class="{{ 'ativo' if ativo == 'visualizar' else '' }}">Visualizar produto</a>
-      <div class="dropdown {{ 'ativo' if ativo in ['cocktails', 'ver_cocktails'] else '' }}">
-        <button type="button" class="dropbtn">Adicionar receitas &#9662;</button>
+      <div class="dropdown {{ 'ativo' if ativo in ['cadastrar', 'visualizar'] else '' }}">
+        <button type="button" class="dropbtn">Produtos &#9662;</button>
         <div class="dropdown-conteudo">
-          <a href="{{ url_for('adicionar_cocktail') }}">Adicionar cocktails</a>
-          <a href="{{ url_for('visualizar_cocktails') }}">Visualizar cocktails</a>
+          <a href="{{ url_for('cadastrar') }}">Cadastrar produtos</a>
+          <a href="{{ url_for('visualizar') }}">Listar produtos</a>
+        </div>
+      </div>
+      <div class="dropdown {{ 'ativo' if ativo in ['cocktails', 'ver_cocktails'] else '' }}">
+        <button type="button" class="dropbtn">Receitas &#9662;</button>
+        <div class="dropdown-conteudo">
+          <a href="{{ url_for('adicionar_cocktail') }}">Cadastrar receitas</a>
+          <a href="{{ url_for('visualizar_cocktails') }}">Visualizar receitas</a>
         </div>
       </div>
     </nav>
