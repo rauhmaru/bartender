@@ -38,6 +38,18 @@ Abra no navegador: <http://127.0.0.1:5000>
 
 O banco `bebidas.db` é criado automaticamente na primeira execução.
 
+### Dados de exemplo (seed)
+
+Para popular o banco com 32 produtos e 30 receitas de coquetéis refrescantes
+(gin, rum, vodka, whisky e cachaça):
+
+```bash
+python3 seed.py
+```
+
+O script é idempotente: produtos e cocktails já existentes (mesmo nome) não são
+duplicados.
+
 ### Variáveis de ambiente opcionais
 
 | Variável     | Padrão      | Descrição                          |
