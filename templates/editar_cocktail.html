@@ -24,7 +24,7 @@
           </select>
           <input type="number" name="quantidade" step="any" min="0"
                  placeholder="ml" required value="{{ "%g"|format(ing.quantidade_ml) if ing.quantidade_ml is number else ing.quantidade_ml }}">
-          <button type="button" class="btn-remover-ing" title="Remover" onclick="removerLinha(this)">&times;</button>
+          <button type="button" class="btn-remover-ing" title="Remover" onclick="removerLinha(this)" aria-label="Remover ingrediente">&times;</button>
         </div>
         {% endfor %}
       </div>
@@ -68,7 +68,7 @@
     </select>
     <input type="number" name="quantidade" step="any" min="0"
            placeholder="ml" required>
-    <button type="button" class="btn-remover-ing" title="Remover" onclick="removerLinha(this)">&times;</button>
+    <button type="button" class="btn-remover-ing" title="Remover" onclick="removerLinha(this)" aria-label="Remover ingrediente">&times;</button>
   </div>
 </template>
 
