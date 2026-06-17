@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SGDC - Sistema de Gestao de Destilados e Coqueteis</title>
+  <title>SGDC - Sistema de Gestão de Destilados e Coquetéis</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600;700&display=swap');
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -361,7 +361,7 @@
   <!-- Side drawer -->
   <nav class="drawer" id="drawer">
     <div class="drawer-header">SGDC</div>
-    <div class="grupo-titulo">Navegacao</div>
+    <div class="grupo-titulo">Navegação</div>
     <a class="{{ 'ativo' if ativo == 'dashboard' else '' }}" href="{{ url_for('index') }}">Meu Bar</a>
     <div class="grupo-titulo">Produtos</div>
     <a class="{{ 'ativo' if ativo == 'produtos' and request.path == '/cadastrar' else '' }}" href="{{ url_for('cadastrar') }}">Cadastrar produtos</a>

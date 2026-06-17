@@ -18,7 +18,7 @@
       </label>
       {% endfor %}
     </div>
-    <p class="filtro-ajuda">Exibe apenas as receitas que contem todos os ingredientes selecionados.</p>
+    <p class="filtro-ajuda">Exibe apenas as receitas que contém todos os ingredientes selecionados.</p>
     <div class="filtro-acoes">
       <button type="submit" class="btn btn-sm btn-primary">Filtrar</button>
       <a class="btn btn-sm btn-secondary" href="{{ url_for('visualizar_cocktails') }}">Limpar filtro</a>
@@ -44,7 +44,7 @@
         </form>
       </div>
     </div>
-    <div class="cocktail-meta"><strong>Tacaria:</strong> {{ c.tacaria }}</div>
+    <div class="cocktail-meta"><strong>Taçaria:</strong> {{ c.tacaria }}</div>
     <div class="cocktail-meta" style="margin-bottom: 4px;"><strong>Ingredientes:</strong></div>
     <ul class="cocktail-ings">
       {% for ing in c.ingredientes %}
@@ -60,7 +60,7 @@
 {% elif filtro_ativo %}
   <div class="card" style="text-align: center; padding: 40px 20px;">
     <div style="font-size: 48px; margin-bottom: 12px;">&#128533;</div>
-    <p style="color: var(--text-secondary); font-size: 15px;">Nao existem receitas com os ingredientes selecionados.</p>
+    <p style="color: var(--text-secondary); font-size: 15px;">Não existem receitas com os ingredientes selecionados.</p>
   </div>
 {% else %}
   <p class="vazio">Nenhum coquetel cadastrado.</p>
