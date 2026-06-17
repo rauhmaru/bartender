@@ -30,7 +30,7 @@
     </div>
 
     <div class="campo">
-      <label for="tacaria">Tacaria</label>
+      <label for="tacaria">Taçaria</label>
       <input type="text" id="tacaria" name="tacaria" maxlength="{{ MAX_TACARIA }}" required
              value="{{ form.tacaria }}" placeholder="Ex.: Copo highball">
     </div>
@@ -49,7 +49,7 @@
   {% else %}
   <p class="vazio" style="text-align: left;">
     Nenhum produto cadastrado. Cadastre produtos antes de criar um coquetel,
-    pois os ingredientes tem origem nos produtos.
+    pois os ingredientes têm origem nos produtos.
   </p>
   <div class="acoes">
     <a class="btn btn-primary" href="{{ url_for('cadastrar') }}">Cadastrar produto</a>

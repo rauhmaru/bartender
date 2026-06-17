@@ -1,23 +1,23 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-SGDC - Sistema de Gestao de Destilados e Coqueteis (versao WEB)
+SGDC - Sistema de Gestão de Destilados e Coquetéis (versão WEB)
 ================================================================
 
-Aplicacao web para cadastro e visualizacao de produtos (bebidas)
-e receitas de coqueteis, com interface no navegador (Flask) e
-persistencia em banco de dados NoSQL (TinyDB).
+Aplicação web para cadastro e visualização de produtos (bebidas)
+e receitas de coquetéis, com interface no navegador (Flask) e
+persistência em banco de dados NoSQL (TinyDB).
 
 Funcionalidades
 ---------------
-- Dashboard com estatisticas (total de itens, coqueteis possiveis)
+- Dashboard com estatísticas (total de itens, coquetéis possíveis)
 - Cadastro e listagem de produtos
 - Cadastro e listagem de tipos de produto
-- Cadastro e visualizacao de receitas de coqueteis
+- Cadastro e visualização de receitas de coquetéis
 - Filtro AND de ingredientes nas receitas
-- Remocao de produtos, tipos e receitas (com bloqueio de integridade)
+- Remoção de produtos, tipos e receitas (com bloqueio de integridade)
 
-Requisitos / Dependencias
+Requisitos / Dependências
 -------------------------
 - Python 3 (testado em 3.10+).
 - Flask (pip install flask).
@@ -30,12 +30,12 @@ Como executar
 
 Em seguida abra no navegador:  http://127.0.0.1:5000
 
-Na primeira execucao o arquivo de banco "sgdc_db.json" e criado
-automaticamente no mesmo diretorio do script.
+Na primeira execução o arquivo de banco "sgdc_db.json" é criado
+automaticamente no mesmo diretório do script.
 
-Variaveis de ambiente opcionais:
-    HOST  (padrao 127.0.0.1)
-    PORT  (padrao 5000)
+Variáveis de ambiente opcionais:
+    HOST  (padrão 127.0.0.1)
+    PORT  (padrão 5000)
 """
 
 import os
@@ -50,7 +50,7 @@ from flask import (
 )
 from tinydb import TinyDB, Query, where
 
-# Caminho do banco de dados: mesmo diretorio do script.
+# Caminho do banco de dados: mesmo diretório do script.
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "sgdc_db.json")
 
@@ -80,7 +80,7 @@ Cocktail = Query()
 # Camada de banco de dados (NoSQL / TinyDB)
 # --------------------------------------------------------------------------- #
 def _next_id(table):
-    """Retorna o proximo ID sequencial para a tabela."""
+    """Retorna o próximo ID sequencial para a tabela."""
     all_docs = table.all()
     if not all_docs:
         return 1
@@ -88,7 +88,7 @@ def _next_id(table):
 
 
 def proximo_id():
-    """Retorna o proximo ID de produtos."""
+    """Retorna o próximo ID de produtos."""
     return _next_id(produtos_table)
 
 
@@ -117,10 +117,10 @@ def listar_tipos():
 
 
 def inserir_tipo(nome):
-    """Insere um novo tipo. Levanta ValueError se ja existir."""
+    """Insere um novo tipo. Levanta ValueError se já existir."""
     existing = tipos_table.search(Tipo.nome == nome)
     if existing:
-        raise ValueError(f"O tipo '{nome}' ja esta cadastrado.")
+        raise ValueError(f"O tipo '{nome}' já está cadastrado.")
     new_id = _next_id(tipos_table)
     tipos_table.insert({"id": new_id, "nome": nome})
     return new_id
@@ -148,7 +148,7 @@ def remover_produto(produto_id):
         for ing in c.get("ingredientes", []):
             if ing.get("produto_id") == produto_id:
                 raise ValueError(
-                    "Nao e possivel remover: o produto esta em uso em uma ou mais receitas."
+                    "Não é possível remover: o produto está em uso em uma ou mais receitas."
                 )
     produtos_table.remove(Produto.id == produto_id)
 
@@ -190,11 +190,11 @@ def atualizar_tipo(tipo_id, nome):
     """Atualiza o nome de um tipo e propaga para os produtos que o usam."""
     old = obter_tipo(tipo_id)
     if not old:
-        raise ValueError("Tipo nao encontrado.")
+        raise ValueError("Tipo não encontrado.")
     old_nome = old["nome"]
     existing = tipos_table.search((Tipo.nome == nome) & (Tipo.id != tipo_id))
     if existing:
-        raise ValueError(f"O tipo '{nome}' ja esta cadastrado.")
+        raise ValueError(f"O tipo '{nome}' já está cadastrado.")
     tipos_table.update({"nome": nome}, Tipo.id == tipo_id)
     if old_nome != nome:
         produtos_table.update({"tipo": nome}, Produto.tipo == old_nome)
@@ -218,7 +218,7 @@ def tipo_em_uso(tipo_id):
 def inserir_cocktail(nome, tacaria, receita, ingredientes):
     """Insere um cocktail com ingredientes embutidos (modelo NoSQL).
 
-    'ingredientes' e uma lista de tuplas (produto_id, quantidade_ml).
+    'ingredientes' é uma lista de tuplas (produto_id, quantidade_ml).
     Retorna o ID do cocktail criado.
     """
     new_id = _next_id(cocktails_table)
@@ -259,7 +259,7 @@ def listar_cocktails():
 
 
 def contar_coqueteis_possiveis():
-    """Conta quantos coqueteis podem ser preparados (todos ingredientes disponiveis)."""
+    """Conta quantos coquetéis podem ser preparados (todos ingredientes disponíveis)."""
     produto_ids = {p["id"] for p in produtos_table.all()}
     count = 0
     for c in cocktails_table.all():
@@ -339,11 +339,11 @@ def cadastrar_tipo():
     if request.method == "POST":
         nome = (request.form.get("nome") or "").strip()
         if not nome:
-            flash("O campo 'Tipo de produto' e obrigatorio.", "erro")
+            flash("O campo 'Tipo de produto' é obrigatório.", "erro")
             return redirect(url_for("cadastrar_tipo"))
         if len(nome) > MAX_TIPO:
             flash(
-                f"'Tipo de produto' deve ter no maximo {MAX_TIPO} caracteres.",
+                f"'Tipo de produto' deve ter no máximo {MAX_TIPO} caracteres.",
                 "erro",
             )
             return redirect(url_for("cadastrar_tipo"))
@@ -371,7 +371,7 @@ def remover_tipo_route(tipo_id):
     """Remove um tipo de produto. Bloqueia se estiver em uso."""
     if tipo_em_uso(tipo_id):
         flash(
-            "Nao e possivel remover: o tipo esta em uso em um ou mais produtos.",
+            "Não é possível remover: o tipo está em uso em um ou mais produtos.",
             "erro",
         )
         return redirect(url_for("cadastrar_tipo"))
@@ -387,16 +387,16 @@ def remover_tipo_route(tipo_id):
 
 @app.route("/tipos/<int:tipo_id>/editar", methods=["GET", "POST"])
 def editar_tipo(tipo_id):
-    """Tela de edicao de tipo de produto."""
+    """Tela de edição de tipo de produto."""
     tipo_obj = obter_tipo(tipo_id)
     if not tipo_obj:
-        flash("Tipo nao encontrado.", "erro")
+        flash("Tipo não encontrado.", "erro")
         return redirect(url_for("cadastrar_tipo"))
 
     if request.method == "POST":
         nome = (request.form.get("nome") or "").strip()
         if not nome:
-            flash("O campo 'Tipo de produto' e obrigatorio.", "erro")
+            flash("O campo 'Tipo de produto' é obrigatório.", "erro")
             return render_template(
                 "editar_tipo.html",
                 tipo_obj=tipo_obj,
@@ -405,7 +405,7 @@ def editar_tipo(tipo_id):
             )
         if len(nome) > MAX_TIPO:
             flash(
-                f"'Tipo de produto' deve ter no maximo {MAX_TIPO} caracteres.",
+                f"'Tipo de produto' deve ter no máximo {MAX_TIPO} caracteres.",
                 "erro",
             )
             return render_template(
@@ -441,17 +441,17 @@ def editar_tipo(tipo_id):
 
 @app.route("/visualizar")
 def visualizar():
-    """Tela de visualizacao dos produtos cadastrados."""
+    """Tela de visualização dos produtos cadastrados."""
     produtos = listar_produtos()
     return render_template("visualizar.html", produtos=produtos, ativo="produtos")
 
 
 @app.route("/visualizar/<int:produto_id>/editar", methods=["GET", "POST"])
 def editar_produto(produto_id):
-    """Tela de edicao de produto."""
+    """Tela de edição de produto."""
     prod = obter_produto(produto_id)
     if not prod:
-        flash("Produto nao encontrado.", "erro")
+        flash("Produto não encontrado.", "erro")
         return redirect(url_for("visualizar"))
 
     tipos = listar_tipos()
@@ -541,7 +541,7 @@ def adicionar_cocktail():
             flash(f"Erro ao salvar no banco: {exc}", "erro")
             return redirect(url_for("adicionar_cocktail"))
 
-        flash(f"Cocktail '{nome}' adicionado com sucesso! ID: {novo_id:05d}", "sucesso")
+        flash(f"Coquetel '{nome}' adicionado com sucesso!", "sucesso")
         return redirect(url_for("adicionar_cocktail"))
 
     return render_template(
@@ -582,10 +582,10 @@ def visualizar_cocktails():
 
 @app.route("/receitas/cocktails/<int:cocktail_id>/editar", methods=["GET", "POST"])
 def editar_cocktail(cocktail_id):
-    """Tela de edicao de cocktail."""
+    """Tela de edição de cocktail."""
     cock = obter_cocktail(cocktail_id)
     if not cock:
-        flash("Receita nao encontrada.", "erro")
+        flash("Receita não encontrada.", "erro")
         return redirect(url_for("visualizar_cocktails"))
 
     produtos = listar_produtos()
@@ -664,19 +664,19 @@ def remover_cocktail_route(cocktail_id):
 def _validar(produto, tipo, volume_txt, tipos_validos=None):
     """Valida os campos de produto. Retorna mensagem de erro ou None."""
     if not produto:
-        return "O campo 'Produto' e obrigatorio."
+        return "O campo 'Produto' é obrigatório."
     if len(produto) > MAX_PRODUTO:
-        return f"'Produto' deve ter no maximo {MAX_PRODUTO} caracteres."
+        return f"'Produto' deve ter no máximo {MAX_PRODUTO} caracteres."
     if not tipo:
-        return "O campo 'Tipo' e obrigatorio."
+        return "O campo 'Tipo' é obrigatório."
     if len(tipo) > MAX_TIPO:
-        return f"'Tipo' deve ter no maximo {MAX_TIPO} caracteres."
+        return f"'Tipo' deve ter no máximo {MAX_TIPO} caracteres."
     if tipos_validos is not None and tipo not in tipos_validos:
-        return "Selecione um tipo de produto valido."
+        return "Selecione um tipo de produto válido."
     if not volume_txt:
-        return "O campo 'Volume (ml)' e obrigatorio."
+        return "O campo 'Volume (ml)' é obrigatório."
     if not volume_txt.isdigit():
-        return "'Volume (ml)' deve ser um numero inteiro."
+        return "'Volume (ml)' deve ser um número inteiro."
     volume = int(volume_txt)
     if volume < 0 or volume > MAX_VOLUME:
         return f"'Volume (ml)' deve estar entre 0 e {MAX_VOLUME}."
@@ -686,15 +686,15 @@ def _validar(produto, tipo, volume_txt, tipos_validos=None):
 def _validar_cocktail(nome, tacaria, receita, produto_ids, quantidades, produtos):
     """Valida os dados do cocktail."""
     if not nome:
-        return "O campo 'Nome do cocktail' e obrigatorio.", []
+        return "O campo 'Nome do coquetel' é obrigatório.", []
     if len(nome) > MAX_NOME:
-        return f"'Nome do cocktail' deve ter no maximo {MAX_NOME} caracteres.", []
+        return f"'Nome do coquetel' deve ter no máximo {MAX_NOME} caracteres.", []
     if not tacaria:
-        return "O campo 'Tacaria' e obrigatorio.", []
+        return "O campo 'Taçaria' é obrigatório.", []
     if len(tacaria) > MAX_TACARIA:
-        return f"'Tacaria' deve ter no maximo {MAX_TACARIA} caracteres.", []
+        return f"'Taçaria' deve ter no máximo {MAX_TACARIA} caracteres.", []
     if not receita:
-        return "O campo 'Receita' e obrigatorio.", []
+        return "O campo 'Receita' é obrigatório.", []
 
     ids_validos = {p["id"] for p in produtos}
     ingredientes = []
@@ -708,15 +708,15 @@ def _validar_cocktail(nome, tacaria, receita, produto_ids, quantidades, produtos
         try:
             pid = int(pid_txt)
         except ValueError:
-            return "Ingrediente invalido.", []
+            return "Ingrediente inválido.", []
         if pid not in ids_validos:
-            return "Ingrediente invalido: produto nao cadastrado.", []
+            return "Ingrediente inválido: produto não cadastrado.", []
         if not qtd_txt:
             return "Informe a quantidade (ml) de cada ingrediente.", []
         try:
             qtd = float(qtd_txt)
         except ValueError:
-            return "'Quantidade' deve ser um numero (ml).", []
+            return "'Quantidade' deve ser um número (ml).", []
         if qtd <= 0 or qtd > MAX_QUANTIDADE:
             return f"'Quantidade' deve ser maior que 0 e ate {int(MAX_QUANTIDADE)}.", []
         ingredientes.append((pid, qtd))
