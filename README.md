@@ -1,31 +1,39 @@
-# Bartender — Gerenciador de Bebidas e Cocktails (Web)
+# SGDC — Sistema de Gestao de Destilados e Coqueteis
 
-Aplicação web em Python para cadastro e visualização de bebidas/produtos,
-com interface no navegador (Flask) e persistência em SQLite.
+Aplicacao web em Python para cadastro e visualizacao de bebidas/produtos
+e receitas de coqueteis, com interface no navegador (Flask) e persistencia
+em banco de dados NoSQL (TinyDB).
 
 ## Funcionalidades
 
+- **Dashboard "Meu Bar"**
+  - Estatisticas: total de itens e coqueteis possiveis.
+  - Lista de coqueteis disponiveis ("Pronto para Misturar").
+  - Inventario com filtro por tipo e barras de progresso.
 - **Cadastrar produto**
-  - ID automático, sequencial, exibido com 5 dígitos (`00001`, `00002`, ...).
-  - Produto (texto, até 50 caracteres, obrigatório).
-  - Tipo (texto, até 30 caracteres, obrigatório).
-  - Volume ml (inteiro, 0 a 99999, obrigatório).
-  - Validação no servidor e mensagens de sucesso/erro.
-- **Visualizar produto**
-  - Tabela com colunas ID, Produto, Tipo, Volume (ml).
-  - Contador de total e mensagem quando não há produtos.
-- **Adicionar receitas** (menu suspenso)
-  - **Adicionar cocktails**: nome, ingredientes (selecionados a partir dos
-    produtos cadastrados, múltiplos), quantidade em ml (numérico float por
-    ingrediente), taçaria (tipo de copo) e receita (modo de preparo).
-  - **Visualizar cocktails**: lista cada cocktail com ingredientes, quantidades,
-    taçaria e receita.
+  - ID automatico, sequencial, formatado com 5 digitos (00001, 00002, ...).
+  - Produto (texto, ate 50 caracteres, obrigatorio).
+  - Tipo (selecionavel dos tipos cadastrados, obrigatorio).
+  - Volume ml (inteiro, 0 a 99999, obrigatorio).
+  - Validacao no servidor e mensagens de sucesso/erro.
+- **Listar produtos**
+  - Cards com barras de progresso, tipo, volume e botao de remocao.
+  - Bloqueio de remocao quando produto esta em uso em receitas.
+- **Cadastrar tipo de produto**
+  - Lista de tipos com botao de remocao (bloqueia se em uso).
+- **Adicionar receitas (coqueteis)**
+  - Nome, ingredientes (selecionados a partir dos produtos cadastrados,
+    multiplos), quantidade em ml (numerico float por ingrediente),
+    tacaria (tipo de copo) e receita (modo de preparo).
+- **Visualizar receitas**
+  - Cards estilizados com filtro AND de ingredientes.
+  - Mensagem dedicada quando nao ha correspondencia.
 
-## Requisitos
+## Tecnologias
 
-- Python 3.10+
-- Flask (`pip install -r requirements.txt`)
-- `sqlite3` faz parte da biblioteca padrão.
+- **Python 3.10+**
+- **Flask** (framework web)
+- **TinyDB** (banco de dados NoSQL documental, armazenamento em JSON)
 
 ## Como executar
 
@@ -36,23 +44,23 @@ python3 app.py
 
 Abra no navegador: <http://127.0.0.1:5000>
 
-O banco `bebidas.db` é criado automaticamente na primeira execução.
+O banco `sgdc_db.json` e criado automaticamente na primeira execucao.
 
 ### Dados de exemplo (seed)
 
-Para popular o banco com 32 produtos e 30 receitas de coquetéis refrescantes
-(gin, rum, vodka, whisky e cachaça):
+Para popular o banco com 32 produtos e 30 receitas de coqueteis refrescantes
+(gin, rum, vodka, whisky e cachaca):
 
 ```bash
 python3 seed.py
 ```
 
-O script é idempotente: produtos e cocktails já existentes (mesmo nome) não são
-duplicados.
+O script e idempotente: produtos e coqueteis ja existentes (mesmo nome) nao
+sao duplicados.
 
-### Variáveis de ambiente opcionais
+### Variaveis de ambiente opcionais
 
-| Variável     | Padrão      | Descrição                          |
+| Variavel     | Padrao      | Descricao                          |
 |--------------|-------------|------------------------------------|
 | `HOST`       | `127.0.0.1` | Use `0.0.0.0` para acesso na rede. |
 | `PORT`       | `5000`      | Porta do servidor.                 |
@@ -61,41 +69,57 @@ duplicados.
 ## Estrutura
 
 ```
-app.py                       # servidor Flask (rotas, validação, SQLite)
-requirements.txt             # dependências
+app.py                       # servidor Flask (rotas, validacao, TinyDB)
+seed.py                      # seed de dados (32 produtos + 30 coqueteis)
+requirements.txt             # dependencias
+sgdc_db.json                 # banco de dados NoSQL (criado automaticamente)
 templates/
-  base.html                  # layout + navegação + estilos
-  cadastrar.html             # formulário de cadastro de produto
-  visualizar.html            # tabela de produtos
-  adicionar_cocktail.html    # formulário de cocktail (ingredientes dinâmicos)
-  visualizar_cocktails.html  # lista de cocktails
+  base.html                  # layout base (dark theme + bottom nav)
+  dashboard.html             # dashboard "Meu Bar"
+  cadastrar.html             # formulario de cadastro de produto
+  visualizar.html            # lista de produtos (inventario)
+  cadastrar_tipo.html        # cadastro e listagem de tipos
+  adicionar_cocktail.html    # formulario de coquetel
+  visualizar_cocktails.html  # lista de coqueteis com filtro
 ```
 
-## Banco de dados
+## Banco de dados (NoSQL — TinyDB)
 
-Tabela `produtos`:
+Os dados sao armazenados em formato JSON no arquivo `sgdc_db.json`.
+A estrutura documental e organizada em tres colecoes (tables):
 
-| Campo       | Tipo                              |
-|-------------|-----------------------------------|
-| `id`        | INTEGER PRIMARY KEY AUTOINCREMENT |
-| `produto`   | TEXT (até 50)                     |
-| `tipo`      | TEXT (até 30)                     |
-| `volume_ml` | INTEGER (0–99999)                 |
+### Colecao `produtos`
+```json
+{
+  "id": 1,
+  "produto": "Gin",
+  "tipo": "Destilado",
+  "volume_ml": 750
+}
+```
 
-Tabela `cocktails`:
+### Colecao `tipos`
+```json
+{
+  "id": 1,
+  "nome": "Destilado"
+}
+```
 
-| Campo     | Tipo                              |
-|-----------|-----------------------------------|
-| `id`      | INTEGER PRIMARY KEY AUTOINCREMENT |
-| `nome`    | TEXT                              |
-| `tacaria` | TEXT                              |
-| `receita` | TEXT                              |
+### Colecao `cocktails`
+```json
+{
+  "id": 1,
+  "nome": "Gin Tonica",
+  "tacaria": "Taca de gin",
+  "receita": "...",
+  "ingredientes": [
+    {"produto_id": 1, "quantidade_ml": 50},
+    {"produto_id": 7, "quantidade_ml": 150}
+  ]
+}
+```
 
-Tabela `cocktail_ingredientes` (relaciona cocktails e produtos):
-
-| Campo           | Tipo                                       |
-|-----------------|--------------------------------------------|
-| `id`            | INTEGER PRIMARY KEY AUTOINCREMENT          |
-| `cocktail_id`   | INTEGER → `cocktails.id` (ON DELETE CASCADE) |
-| `produto_id`    | INTEGER → `produtos.id`                     |
-| `quantidade_ml` | REAL (float, ml por ingrediente)           |
+Note que no modelo NoSQL os ingredientes sao embutidos diretamente no
+documento do coquetel, eliminando a necessidade de uma tabela de
+relacionamento separada (como seria necessario em SQL).

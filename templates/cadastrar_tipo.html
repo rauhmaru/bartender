@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block conteudo %}
 <div class="card">
-  <h2>Cadastrar tipo de produto</h2>
+  <h2>Cadastrar Tipo de Produto</h2>
   <form method="post" action="{{ url_for('cadastrar_tipo') }}" novalidate>
     <div class="campo">
       <label for="nome">Tipo de produto</label>
@@ -10,39 +10,33 @@
              placeholder="Ex.: Destilado">
     </div>
     <div class="acoes">
-      <button type="submit">Salvar</button>
+      <button type="submit" class="btn btn-primary">Salvar</button>
     </div>
   </form>
+</div>
 
-  <h3>Tipos cadastrados</h3>
+<div class="card" style="margin-top: 16px;">
+  <h3 style="font-family: 'Playfair Display', serif; font-size: 18px; margin-bottom: 16px;">Tipos Cadastrados</h3>
   {% if tipos %}
-  <table>
-    <thead>
-      <tr>
-        <th class="center">ID</th>
-        <th>Tipo</th>
-        <th class="center">Ações</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for t in tipos %}
-      <tr>
-        <td class="center">{{ "%05d"|format(t["id"]) }}</td>
-        <td>{{ t["nome"] }}</td>
-        <td class="center">
-          <form class="form-inline" method="post"
-                action="{{ url_for('remover_tipo_route', tipo_id=t['id']) }}"
-                onsubmit="return confirm('Remover este tipo de produto?');">
-            <button type="submit" class="btn perigo">Remover</button>
-          </form>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  <p class="vazio">{{ tipos|length }} tipo(s) cadastrado(s).</p>
+    {% for t in tipos %}
+    <div class="inv-item">
+      <div class="inv-icon">&#128218;</div>
+      <div class="inv-info">
+        <div class="inv-name">{{ t.nome }}</div>
+        <div class="inv-detail">ID {{ "%05d"|format(t.id) }}</div>
+      </div>
+      <div class="inv-actions">
+        <form class="form-inline" method="post"
+              action="{{ url_for('remover_tipo_route', tipo_id=t.id) }}"
+              onsubmit="return confirm('Remover este tipo de produto?');">
+          <button type="submit" class="btn btn-danger btn-sm">Remover</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+    <p class="vazio">{{ tipos|length }} tipo(s) cadastrado(s).</p>
   {% else %}
-  <p class="vazio">Nenhum tipo cadastrado.</p>
+    <p class="vazio">Nenhum tipo cadastrado.</p>
   {% endif %}
 </div>
 {% endblock %}

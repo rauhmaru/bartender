@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% block conteudo %}
 <div class="card">
-  <h2>Adicionar cocktails</h2>
+  <h2>Adicionar Coquetel</h2>
 
   {% if produtos %}
   <form method="post" action="{{ url_for('adicionar_cocktail') }}" novalidate>
     <div class="campo">
-      <label for="nome">Nome do cocktail</label>
+      <label for="nome">Nome do coquetel</label>
       <input type="text" id="nome" name="nome" maxlength="{{ MAX_NOME }}" required
              value="{{ form.nome }}" placeholder="Ex.: Mojito">
     </div>
@@ -18,19 +18,19 @@
           <select name="produto_id" required>
             <option value="">-- selecione um produto --</option>
             {% for p in produtos %}
-            <option value="{{ p['id'] }}">{{ p['produto'] }} ({{ p['tipo'] }})</option>
+            <option value="{{ p.id }}">{{ p.produto }} ({{ p.tipo }})</option>
             {% endfor %}
           </select>
           <input type="number" name="quantidade" step="any" min="0"
-                 placeholder="Quantidade (ml)" required>
-          <button type="button" class="btn-remover" title="Remover" onclick="removerLinha(this)">&times;</button>
+                 placeholder="ml" required>
+          <button type="button" class="btn-remover-ing" title="Remover" onclick="removerLinha(this)">&times;</button>
         </div>
       </div>
-      <button type="button" class="btn btn-add-ing" onclick="adicionarLinha()">+ Adicionar ingrediente</button>
+      <button type="button" class="btn btn-sm btn-secondary btn-add-ing" onclick="adicionarLinha()">+ Adicionar ingrediente</button>
     </div>
 
     <div class="campo">
-      <label for="tacaria">Taçaria</label>
+      <label for="tacaria">Tacaria</label>
       <input type="text" id="tacaria" name="tacaria" maxlength="{{ MAX_TACARIA }}" required
              value="{{ form.tacaria }}" placeholder="Ex.: Copo highball">
     </div>
@@ -42,17 +42,17 @@
     </div>
 
     <div class="acoes">
-      <a class="btn secundario" href="{{ url_for('adicionar_cocktail') }}">Limpar</a>
-      <button type="submit">Salvar</button>
+      <a class="btn btn-secondary" href="{{ url_for('adicionar_cocktail') }}">Limpar</a>
+      <button type="submit" class="btn btn-primary">Salvar</button>
     </div>
   </form>
   {% else %}
-  <p class="vazio">
-    Nenhum produto cadastrado. Cadastre produtos antes de criar um cocktail,
-    pois os ingredientes têm origem nos produtos.
+  <p class="vazio" style="text-align: left;">
+    Nenhum produto cadastrado. Cadastre produtos antes de criar um coquetel,
+    pois os ingredientes tem origem nos produtos.
   </p>
   <div class="acoes">
-    <a class="btn" href="{{ url_for('cadastrar') }}">Cadastrar produto</a>
+    <a class="btn btn-primary" href="{{ url_for('cadastrar') }}">Cadastrar produto</a>
   </div>
   {% endif %}
 </div>
@@ -62,12 +62,12 @@
     <select name="produto_id" required>
       <option value="">-- selecione um produto --</option>
       {% for p in produtos %}
-      <option value="{{ p['id'] }}">{{ p['produto'] }} ({{ p['tipo'] }})</option>
+      <option value="{{ p.id }}">{{ p.produto }} ({{ p.tipo }})</option>
       {% endfor %}
     </select>
     <input type="number" name="quantidade" step="any" min="0"
-           placeholder="Quantidade (ml)" required>
-    <button type="button" class="btn-remover" title="Remover" onclick="removerLinha(this)">&times;</button>
+           placeholder="ml" required>
+    <button type="button" class="btn-remover-ing" title="Remover" onclick="removerLinha(this)">&times;</button>
   </div>
 </template>
 
@@ -82,7 +82,6 @@
     if (linhas.length > 1) {
       btn.closest('.ingrediente-linha').remove();
     } else {
-      // Mantem ao menos uma linha: apenas limpa os campos.
       var linha = btn.closest('.ingrediente-linha');
       linha.querySelector('select').value = '';
       linha.querySelector('input').value = '';

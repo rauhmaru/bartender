@@ -1,5 +1,6 @@
-# Banco de dados gerado em tempo de execução
+# Banco de dados gerado em tempo de execucao
 bebidas.db
+sgdc_db.json
 
 # Python
 __pycache__/

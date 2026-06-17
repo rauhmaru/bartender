@@ -1,62 +1,65 @@
 {% extends "base.html" %}
 {% block conteudo %}
-<div class="card">
-  <h2>Visualizar cocktails</h2>
-
-  {% if produtos %}
-  <form method="get" action="{{ url_for('visualizar_cocktails') }}" class="filtro">
-    <fieldset>
-      <legend>Filtrar por ingredientes</legend>
-      <div class="filtro-ingredientes">
-        {% for p in produtos %}
-        <label class="filtro-item">
-          <input type="checkbox" name="ingredientes" value="{{ p['id'] }}"
-                 {{ 'checked' if p['id'] in selecionados else '' }}>
-          {{ p['produto'] }}
-        </label>
-        {% endfor %}
-      </div>
-      <p class="filtro-ajuda">Exibe apenas as receitas que contêm todos os ingredientes selecionados.</p>
-      <div class="filtro-acoes">
-        <button type="submit">Filtrar</button>
-        <a class="btn secundario" href="{{ url_for('visualizar_cocktails') }}">Limpar filtro</a>
-      </div>
-    </fieldset>
-  </form>
-  {% endif %}
-
-  {% if cocktails %}
-    {% for c in cocktails %}
-    <div style="border:1px solid #eceff2; border-radius:8px; padding:16px; margin-bottom:16px;">
-      <div class="item-titulo">
-        <h3>{{ "%05d"|format(c.id) }} — {{ c.nome }}</h3>
-        <form class="form-inline" method="post"
-              action="{{ url_for('remover_cocktail_route', cocktail_id=c.id) }}"
-              onsubmit="return confirm('Remover esta receita?');">
-          <button type="submit" class="btn perigo">Remover</button>
-        </form>
-      </div>
-      <p style="margin:4px 0;"><strong>Taçaria:</strong> {{ c.tacaria }}</p>
-      <p style="margin:4px 0;"><strong>Ingredientes:</strong></p>
-      <ul style="margin:4px 0 8px;">
-        {% for ing in c.ingredientes %}
-        <li>{{ ing["produto"] }} — {{ "%g"|format(ing["quantidade_ml"]) }} ml</li>
-        {% endfor %}
-      </ul>
-      <p style="margin:4px 0;"><strong>Receita:</strong></p>
-      <p style="margin:4px 0; white-space:pre-wrap;">{{ c.receita }}</p>
-    </div>
-    {% endfor %}
-    <p class="vazio">
-      {{ cocktails|length }} cocktail(s){{ ' encontrado(s) com o filtro' if filtro_ativo else ' cadastrado(s)' }}.
-    </p>
-  {% elif filtro_ativo %}
-    <p class="vazio">Não existem receitas com os ingredientes selecionados.</p>
-  {% else %}
-    <p class="vazio">Nenhum cocktail cadastrado.</p>
-  {% endif %}
-  <div class="acoes">
-    <a class="btn" href="{{ url_for('adicionar_cocktail') }}">Adicionar cocktails</a>
-  </div>
+<div class="card-header">
+  <h2 style="margin-bottom: 0;">Receitas</h2>
+  <a href="{{ url_for('adicionar_cocktail') }}" class="btn btn-sm btn-gold">+ Adicionar</a>
 </div>
+
+{% if produtos %}
+<form method="get" action="{{ url_for('visualizar_cocktails') }}" class="filtro">
+  <div class="filtro-panel">
+    <div class="filtro-title">Filtrar por ingredientes</div>
+    <div class="filtro-ingredientes">
+      {% for p in produtos %}
+      <label class="filtro-item">
+        <input type="checkbox" name="ingredientes" value="{{ p.id }}"
+               {{ 'checked' if p.id in selecionados else '' }}>
+        {{ p.produto }}
+      </label>
+      {% endfor %}
+    </div>
+    <p class="filtro-ajuda">Exibe apenas as receitas que contem todos os ingredientes selecionados.</p>
+    <div class="filtro-acoes">
+      <button type="submit" class="btn btn-sm btn-primary">Filtrar</button>
+      <a class="btn btn-sm btn-secondary" href="{{ url_for('visualizar_cocktails') }}">Limpar filtro</a>
+    </div>
+  </div>
+</form>
+{% endif %}
+
+{% if cocktails %}
+  {% for c in cocktails %}
+  <div class="cocktail-card">
+    <div class="cocktail-header">
+      <div>
+        <div class="cocktail-name">{{ c.nome }}</div>
+        <div class="cocktail-id">ID {{ "%05d"|format(c.id) }}</div>
+      </div>
+      <form class="form-inline" method="post"
+            action="{{ url_for('remover_cocktail_route', cocktail_id=c.id) }}"
+            onsubmit="return confirm('Remover esta receita?');">
+        <button type="submit" class="btn btn-danger btn-sm">Remover</button>
+      </form>
+    </div>
+    <div class="cocktail-meta"><strong>Tacaria:</strong> {{ c.tacaria }}</div>
+    <div class="cocktail-meta" style="margin-bottom: 4px;"><strong>Ingredientes:</strong></div>
+    <ul class="cocktail-ings">
+      {% for ing in c.ingredientes %}
+      <li>&#127862; {{ ing.produto }} — {{ "%g"|format(ing.quantidade_ml) }} ml</li>
+      {% endfor %}
+    </ul>
+    <div class="cocktail-recipe"><strong style="color: var(--gold);">Preparo:</strong> {{ c.receita }}</div>
+  </div>
+  {% endfor %}
+  <p class="vazio">
+    {{ cocktails|length }} coquetel(is){{ ' encontrado(s) com o filtro' if filtro_ativo else ' cadastrado(s)' }}.
+  </p>
+{% elif filtro_ativo %}
+  <div class="card" style="text-align: center; padding: 40px 20px;">
+    <div style="font-size: 48px; margin-bottom: 12px;">&#128533;</div>
+    <p style="color: var(--text-secondary); font-size: 15px;">Nao existem receitas com os ingredientes selecionados.</p>
+  </div>
+{% else %}
+  <p class="vazio">Nenhum coquetel cadastrado.</p>
+{% endif %}
 {% endblock %}

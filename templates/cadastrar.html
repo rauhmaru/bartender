@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block conteudo %}
 <div class="card">
-  <h2>Cadastrar produto</h2>
+  <h2>Cadastrar Produto</h2>
   <form method="post" action="{{ url_for('cadastrar') }}" novalidate>
     <div class="campo">
       <label for="id">ID</label>
@@ -23,9 +23,9 @@
         {% endfor %}
       </select>
       {% else %}
-      <p class="vazio" style="margin:0;">
+      <p class="vazio" style="margin:0; text-align: left;">
         Nenhum tipo cadastrado.
-        <a href="{{ url_for('cadastrar_tipo') }}">Cadastre um tipo de produto</a> primeiro.
+        <a href="{{ url_for('cadastrar_tipo') }}" style="color: var(--gold);">Cadastre um tipo de produto</a> primeiro.
       </p>
       {% endif %}
     </div>
@@ -36,8 +36,8 @@
              value="{{ form.volume_ml }}" placeholder="0 a {{ MAX_VOLUME }}">
     </div>
     <div class="acoes">
-      <a class="btn secundario" href="{{ url_for('cadastrar') }}">Limpar</a>
-      <button type="submit">Salvar</button>
+      <a class="btn btn-secondary" href="{{ url_for('cadastrar') }}">Limpar</a>
+      <button type="submit" class="btn btn-primary">Salvar</button>
     </div>
   </form>
 </div>
