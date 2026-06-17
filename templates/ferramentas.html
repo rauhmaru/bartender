@@ -1,0 +1,400 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<style>
+  /* Header styling override */
+  .guide-header {
+    background: linear-gradient(135deg, var(--bg-card-alt) 0%, var(--bg-card) 100%);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 24px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .guide-header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(212, 168, 83, 0.05) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .guide-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 26px;
+    color: var(--gold);
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+  }
+  .guide-desc {
+    font-size: 14px;
+    color: var(--text-secondary);
+    max-width: 500px;
+    margin: 0 auto;
+    line-height: 1.5;
+  }
+
+  /* Grid layouts */
+  .guide-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  /* Glassmorphism item card */
+  .item-card {
+    background: rgba(26, 26, 46, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  .item-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--gold);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4), 0 0 12px rgba(212, 168, 83, 0.1);
+  }
+  .item-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(212, 168, 83, 0.1) 0%, rgba(212, 168, 83, 0.2) 100%);
+    border: 1px solid rgba(212, 168, 83, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+  }
+  .item-content {
+    flex: 1;
+  }
+  .item-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--gold-light);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .item-badge {
+    font-family: 'Inter', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: var(--bg-card-alt);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    padding: 2px 8px;
+    border-radius: 20px;
+  }
+  .item-text {
+    font-size: 13.5px;
+    color: var(--text-primary);
+    line-height: 1.6;
+    margin-bottom: 10px;
+  }
+  .item-tip {
+    font-size: 12px;
+    color: var(--gold);
+    background: rgba(212, 168, 83, 0.05);
+    border-left: 3px solid var(--gold);
+    padding: 8px 12px;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    margin-top: 8px;
+  }
+
+  /* Custom tab styling */
+  .guide-tabs {
+    display: flex;
+    gap: 8px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  .guide-tab {
+    padding: 10px 18px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    cursor: pointer;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    background: none;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+  .guide-tab:hover {
+    color: var(--text-secondary);
+  }
+  .guide-tab.active {
+    color: var(--gold);
+    border: 1px solid var(--border);
+    border-bottom-color: var(--bg-dark);
+    background: var(--bg-card);
+    border-radius: var(--radius-sm);
+  }
+
+  /* Animation for tab content */
+  .tab-pane {
+    display: none;
+    animation: fadeIn 0.3s ease-in-out;
+  }
+  .tab-pane.active {
+    display: block;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+
+<div class="guide-header">
+  <div class="guide-title">Manual do Bar & Insumos</div>
+  <div class="guide-desc">Um guia completo sobre as ferramentas essenciais, bases alcoólicas, modificadores e preparo de insumos para elevar seus coquetéis.</div>
+</div>
+
+<!-- Tabs Navigation -->
+<div class="guide-tabs">
+  <button class="guide-tab active" onclick="switchTab('ferramentas')">🛠️ Ferramentas</button>
+  <button class="guide-tab" onclick="switchTab('destilados')">🥃 Destilados</button>
+  <button class="guide-tab" onclick="switchTab('licores')">🍸 Licores & Bitters</button>
+  <button class="guide-tab" onclick="switchTab('xaropes')">🍋 Cítricos & Xaropes</button>
+</div>
+
+<!-- Tab: Ferramentas -->
+<div id="tab-ferramentas" class="tab-pane active">
+  <div class="guide-grid">
+    <!-- Coqueteleira -->
+    <div class="item-card">
+      <div class="item-icon">🛠️</div>
+      <div class="item-content">
+        <div class="item-name">Coqueteleira <span class="item-badge">Essencial</span></div>
+        <div class="item-text">O item mais característico do bar. Responsável por misturar, resfriar, aerar e diluir o cocktail rapidamente. Existem duas opções principais: o clássico <strong>Modelo Cobbler</strong> (3 partes, com coador embutido) e o <strong>Boston Shaker</strong> (2 partes, mais ágil e amplo, exigindo strainer).</div>
+        <div class="item-tip"><strong>Recomendação:</strong> O modelo Boston de inox é mais prático para limpar e trabalhar no dia a dia do bar.</div>
+      </div>
+    </div>
+
+    <!-- Mixing Glass -->
+    <div class="item-card">
+      <div class="item-icon">🥛</div>
+      <div class="item-content">
+        <div class="item-name">Mixing Glass / Copo Misturador <span class="item-badge">Técnico</span></div>
+        <div class="item-text">Um copo longo e amplo usado para preparar cocktails mexidos (como Negroni e Dry Martini). Sua finalidade é resfriar e diluir suavemente as bebidas sem incorporar ar ou quebrar o gelo.</div>
+        <div class="item-tip"><strong>Dica:</strong> Para uso doméstico, o modelo de inox é excelente por ser inquebrável, ter ótima troca térmica e fácil manutenção.</div>
+      </div>
+    </div>
+
+    <!-- Dosador -->
+    <div class="item-card">
+      <div class="item-icon">⚖️</div>
+      <div class="item-content">
+        <div class="item-name">Dosadores (Jiggers) <span class="item-badge">Essencial</span></div>
+        <div class="item-text">A precisão é o segredo da consistência na coquetelaria. Os dosadores ajudam a garantir que a medida exata de cada ingrediente seja incorporada à receita. Existem dezenas de formatos, desde modelos vintage até designs temáticos.</div>
+        <div class="item-tip"><strong>Dica:</strong> Procure modelos com marcações internas com capacidades de 50/30ml ou 60/30ml para facilitar a maioria das receitas clássicas.</div>
+      </div>
+    </div>
+
+    <!-- Strainer -->
+    <div class="item-card">
+      <div class="item-icon">🕸️</div>
+      <div class="item-content">
+        <div class="item-name">Coadores (Strainer) <span class="item-badge">Essencial</span></div>
+        <div class="item-text">Utensílio com mola que se encaixa no mixing glass ou na coqueteleira para reter o gelo e pedaços grandes de frutas/ervas na hora de servir. Usado na coagem simples ou junto com uma peneira fina para a coagem dupla.</div>
+        <div class="item-tip"><strong>Dica:</strong> Após o uso, limpe imediatamente com uma escova para remover resíduos cítricos e açúcares.</div>
+      </div>
+    </div>
+
+    <!-- Bailarina -->
+    <div class="item-card">
+      <div class="item-icon">🥄</div>
+      <div class="item-content">
+        <div class="item-name">Bailarina / Colher de Bar <span class="item-badge">Técnico</span></div>
+        <div class="item-text">Uma colher de cabo longo e espiralado para misturar bebidas no mixing glass ou direto no copo. A espiral auxilia a deslizar a colher suavemente pela parede do copo, além de permitir verter xaropes em camadas.</div>
+        <div class="item-tip"><strong>Dica:</strong> Uma colher de bar espiralada de 30cm com um disco ou contra-peso na ponta é o modelo ideal.</div>
+      </div>
+    </div>
+
+    <!-- Macerador -->
+    <div class="item-card">
+      <div class="item-icon">🪵</div>
+      <div class="item-content">
+        <div class="item-name">Macerador <span class="item-badge">Essencial</span></div>
+        <div class="item-text">Indispensável para extrair óleos essenciais de cascas de cítricos, sumos e amassar frutas diretamente no copo ou coqueteleira (como no preparo de Caipirinhas). Disponível em madeira, acrílico e inox.</div>
+        <div class="item-tip"><strong>Dica:</strong> Prefira maceradores de aço inox com ponta dentada de polietileno pela durabilidade e facilidade de higienização.</div>
+      </div>
+    </div>
+
+    <!-- Espremedor e Faca -->
+    <div class="item-card">
+      <div class="item-icon">🔪</div>
+      <div class="item-content">
+        <div class="item-name">Espremedor & Faca <span class="item-badge">Básicos</span></div>
+        <div class="item-text">Um espremedor de cítricos manual de inox ajuda a obter sucos frescos instantâneos no bar. Já uma faca pequena e bem afiada garante precisão e segurança no corte de guarnições e frutas.</div>
+        <div class="item-tip"><strong>Dica:</strong> Encontre uma faca que se adapte confortavelmente ao tamanho de sua mão para melhor mobilidade.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tab: Destilados -->
+<div id="tab-destilados" class="tab-pane">
+  <div class="guide-grid">
+    <!-- Gin -->
+    <div class="item-card">
+      <div class="item-icon">🍸</div>
+      <div class="item-content">
+        <div class="item-name">Gin <span class="item-badge">Zimbro</span></div>
+        <div class="item-text">Derivado do holandês <em>Genever</em>, é um destilado neutro de grãos infundido com bagas de zimbro (o protagonista obrigatório) e outros botânicos como cascas cítricas, coentro, cardamomo, raiz de angélica e quina. É a base de clássicos como Negroni, Dry Martini e Gin Tônica.</div>
+        <div class="item-tip"><strong>Dica:</strong> Dê uma chance aos ótimos Gins artesanais produzidos no Brasil!</div>
+      </div>
+    </div>
+
+    <!-- Tequila -->
+    <div class="item-card">
+      <div class="item-icon">🌵</div>
+      <div class="item-content">
+        <div class="item-name">Tequila <span class="item-badge">Agave</span></div>
+        <div class="item-text">Produzida no México exclusivamente a partir do cozimento e fermentação do Agave Azul (Agave Tequilana). Com teor alcoólico comum de 40%, classifica-se principalmente em: <strong>Blanco / Plata</strong> (jovem e herbal), <strong>Reposado</strong> (envelhecido por 2 a 12 meses em barril) e <strong>Añejo</strong> (envelhecido por mais de 1 ano).</div>
+        <div class="item-tip"><strong>Dica:</strong> Procure garrafas com rótulo "100% Agave" para evitar tequilas mistas de menor qualidade.</div>
+      </div>
+    </div>
+
+    <!-- Rum -->
+    <div class="item-card">
+      <div class="item-icon">🏴‍☠️</div>
+      <div class="item-content">
+        <div class="item-name">Rum <span class="item-badge">Cana-de-Açúcar</span></div>
+        <div class="item-text">Um dos destilados mais antigos e importantes da coquetelaria, originado no Caribe a partir da fermentação e destilação do melaço ou caldo de cana de açúcar. Apresenta estilos variados como o espanhol (leve e limpo), inglês (robusto e encorpado) e francês (agrícola). Categorias principais: Blanco, Oro/Ouro, Envelhecido, Spiced e saborizados.</div>
+        <div class="item-tip"><strong>Dica:</strong> Indispensável para clássicos refrescantes como Mojito, Daiquiri e Piña Colada.</div>
+      </div>
+    </div>
+
+    <!-- Vodka -->
+    <div class="item-card">
+      <div class="item-icon">❄️</div>
+      <div class="item-content">
+        <div class="item-name">Vodka <span class="item-badge">Neutro</span></div>
+        <div class="item-text">Originada na Rússia/Polônia (seu nome significa "pequena água"), a vodka é um destilado altamente retificado a partir de matérias-primas ricas em amido (trigo, centeio, batata, milho e até uvas). Seu perfil extremamente limpo e neutro serve como tela em branco perfeita para licores e frutas.</div>
+        <div class="item-tip"><strong>Nota:</strong> Teve papel monumental na coquetelaria moderna de clássicos como Moscow Mule e Cosmopolitan.</div>
+      </div>
+    </div>
+
+    <!-- Whiskey -->
+    <div class="item-card">
+      <div class="item-icon">🥃</div>
+      <div class="item-content">
+        <div class="item-name">Whisky / Whiskey <span class="item-badge">Malte & Grãos</span></div>
+        <div class="item-text">Do gaélico <em>uisce beatha</em> ("água da vida"), é um destilado envelhecido em barris de carvalho produzido a partir de grãos maltados ou não (cevada, milho, centeio, trigo). Os estilos mais famosos são o Escocês (Scotch), Irlandês, Americano (Bourbon e Rye), Canadense e Japonês.</div>
+        <div class="item-tip"><strong>Dica:</strong> Ter uma garrafa de Bourbon americano e um Scotch escocês em casa abre as portas para excelentes receitas.</div>
+      </div>
+    </div>
+
+    <!-- Cachaça -->
+    <div class="item-card">
+      <div class="item-icon">🍋</div>
+      <div class="item-content">
+        <div class="item-name">Cachaça <span class="item-badge">Nacional</span></div>
+        <div class="item-text">O destilado típico e exclusivo do Brasil, obtido pela destilação do caldo de cana fermentado. Embora não esteja no "Top 5" global de destilados de bar, é a alma da Caipirinha – listada constantemente entre os 10 coquetéis mais populares do mundo.</div>
+        <div class="item-tip"><strong>Dica:</strong> Mantenha sempre uma boa cachaça branca e uma envelhecida em madeiras nacionais (amburana, bálsamo ou ipê) no seu bar.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tab: Licores -->
+<div id="tab-licores" class="tab-pane">
+  <div class="guide-grid">
+    <!-- Licores -->
+    <div class="item-card">
+      <div class="item-icon">🍯</div>
+      <div class="item-content">
+        <div class="item-name">Licores Essenciais <span class="item-badge">Modificadores</span></div>
+        <div class="item-text">Bebidas alcoólicas doces enriquecidas com infusões de frutas, ervas, flores, sementes ou especiarias. Aportam dulçor, cor, viscosidade e aromas complexos aos drinks.</div>
+        <div class="item-text"><strong>Sugestões essenciais para bar doméstico:</strong>
+          <ul style="list-style: none; padding-left: 8px; margin-top: 8px;">
+            <li style="margin-bottom: 6px;">• <strong>Licor de Laranja</strong> (Cointreau/Triple Sec) - Essencial para Margaritas e Cosmopolitans.</li>
+            <li style="margin-bottom: 6px;">• <strong>Licor de Café</strong> (Kahlúa) - Usado em Espresso Martini e White Russian.</li>
+            <li style="margin-bottom: 6px;">• <strong>Licor de Maraschino</strong> - Licor de cerejas azedas secas, chave no Martinez e Hemingway Daiquiri.</li>
+            <li style="margin-bottom: 6px;">• <strong>Licor de Amêndoas</strong> (Amaretto) - Base do clássico Amaretto Sour e Godfather.</li>
+            <li style="margin-bottom: 6px;">• <strong>Licor de Flor de Sabugueiro</strong> - Garante notas florais elegantes aos drinks.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bitters -->
+    <div class="item-card">
+      <div class="item-icon">🧪</div>
+      <div class="item-content">
+        <div class="item-name">Bitters & Amargos <span class="item-badge">Equilíbrio</span></div>
+        <div class="item-text">Insumos amargos e aromáticos concentrados essenciais para equilibrar drinks doces ou cítricos. Dividem-se em <em>bitters potáveis</em> (como Campari, Cynar e Fernet, consumidos purificados ou como base) e <em>bitters não potáveis / aromáticos</em> (como Angostura, aplicados em gotas/dash).</div>
+        <div class="item-tip"><strong>Dica:</strong> Tenha sempre em casa um Bitter Aromático clássico (Angostura), um Bitter de Laranja e um Bitter de Cacau para perfumar seus coquetéis mexidos.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tab: Xaropes -->
+<div id="tab-xaropes" class="tab-pane">
+  <div class="guide-grid">
+    <!-- Cítricos -->
+    <div class="item-card">
+      <div class="item-icon">🍋</div>
+      <div class="item-content">
+        <div class="item-name">Sucos Cítricos <span class="item-badge">Acidez</span></div>
+        <div class="item-text">Fornecem acidez, frescor e equilíbrio aos açúcares e álcool. Os cítricos mais comuns na coquetelaria são o <strong>Limão Tahiti</strong> (ácido e aromático), <strong>Limão Siciliano</strong> (mais suave e floral), <strong>Laranja Bahia</strong> (sumo doce) e a <strong>Grapefruit / Toranja</strong> (levemente amarga).</div>
+        <div class="item-tip"><strong>Dica de Ouro:</strong> Esprema o suco sempre na hora de preparar o drink! A refrigeração de sucos cítricos deve ser mantida por no máximo 5 horas, após isso eles oxidam e mudam de sabor.</div>
+      </div>
+    </div>
+
+    <!-- Xaropes -->
+    <div class="item-card">
+      <div class="item-icon">🧪</div>
+      <div class="item-content">
+        <div class="item-name">Xaropes Caseiros <span class="item-badge">Dulçor</span></div>
+        <div class="item-text">Usados em vez de açúcar granulado para garantir fácil diluição em bebidas frias. Receitas principais:</div>
+        <div class="item-text">
+          <ul style="list-style: none; padding-left: 8px; margin-top: 8px;">
+            <li style="margin-bottom: 6px;">• <strong>Xarope Simples (1x1):</strong> Dilua partes iguais de açúcar cristal e água em fogo médio. (Exemplo: 250g de açúcar e 250ml de água).</li>
+            <li style="margin-bottom: 6px;">• <strong>Xarope Enriquecido (2x1):</strong> Xarope mais encorpado e durável. Dilua 2 partes de açúcar (400g) para 1 parte de água (200ml).</li>
+            <li style="margin-bottom: 6px;">• <strong>Xarope de Mel:</strong> Misture partes iguais de mel e água morna. Nunca use mel puro direto no coquetel, pois ele endurece e empedra ao entrar em contato com o gelo.</li>
+          </ul>
+        </div>
+        <div class="item-tip"><strong>Segurança:</strong> Armazene sempre em garrafas limpas e sob refrigeração. Fique atento a alterações de textura, cor ou aroma antes de servir.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function switchTab(tabName) {
+    // Hide all panes
+    const panes = document.querySelectorAll('.tab-pane');
+    panes.forEach(pane => pane.classList.remove('active'));
+    
+    // Deactivate all tab buttons
+    const tabs = document.querySelectorAll('.guide-tab');
+    tabs.forEach(tab => tab.classList.remove('active'));
+    
+    // Activate target pane and tab button
+    document.getElementById('tab-' + tabName).classList.add('active');
+    
+    // Find button that contains the click
+    event.currentTarget.classList.add('active');
+  }
+</script>
+{% endblock %}

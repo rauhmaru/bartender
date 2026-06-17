@@ -272,6 +272,12 @@ def contar_coqueteis_possiveis():
 # --------------------------------------------------------------------------- #
 # Rotas
 # --------------------------------------------------------------------------- #
+@app.route("/ferramentas")
+def ferramentas():
+    """Página de guia do bar, suas ferramentas e insumos."""
+    return render_template("ferramentas.html", ativo="ferramentas")
+
+
 @app.route("/")
 def index():
     """Dashboard principal — Meu Bar."""

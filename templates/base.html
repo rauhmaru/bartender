@@ -363,6 +363,7 @@
     <div class="drawer-header">SGDC</div>
     <div class="grupo-titulo">Navegação</div>
     <a class="{{ 'ativo' if ativo == 'dashboard' else '' }}" href="{{ url_for('index') }}">Meu Bar</a>
+    <a class="{{ 'ativo' if ativo == 'ferramentas' else '' }}" href="{{ url_for('ferramentas') }}">Guia de Ferramentas</a>
     <div class="grupo-titulo">Produtos</div>
     <a class="{{ 'ativo' if ativo == 'produtos' and request.path == '/cadastrar' else '' }}" href="{{ url_for('cadastrar') }}">Cadastrar produtos</a>
     <a class="{{ 'ativo' if ativo == 'tipos' else '' }}" href="{{ url_for('cadastrar_tipo') }}">Cadastrar tipo</a>
