@@ -235,10 +235,15 @@ def inserir_cocktail(nome, tacaria, receita, ingredientes):
     return new_id
 
 
-def listar_cocktails():
+def listar_cocktails(produtos=None, cocktails=None):
     """Retorna os cocktails com nomes dos produtos nos ingredientes."""
-    produtos_map = {p["id"]: p["produto"] for p in produtos_table.all()}
-    cocktails = sorted(cocktails_table.all(), key=lambda d: d.get("id", 0))
+    if produtos is None:
+        produtos = produtos_table.all()
+    if cocktails is None:
+        cocktails = cocktails_table.all()
+
+    produtos_map = {p["id"]: p["produto"] for p in produtos}
+    cocktails = sorted(cocktails, key=lambda d: d.get("id", 0))
     resultado = []
     for c in cocktails:
         ings = []
@@ -258,11 +263,16 @@ def listar_cocktails():
     return resultado
 
 
-def contar_coqueteis_possiveis():
+def contar_coqueteis_possiveis(produtos=None, cocktails=None):
     """Conta quantos coquetéis podem ser preparados (todos ingredientes disponíveis)."""
-    produto_ids = {p["id"] for p in produtos_table.all()}
+    if produtos is None:
+        produtos = produtos_table.all()
+    if cocktails is None:
+        cocktails = cocktails_table.all()
+
+    produto_ids = {p["id"] for p in produtos}
     count = 0
-    for c in cocktails_table.all():
+    for c in cocktails:
         needed = {ing["produto_id"] for ing in c.get("ingredientes", [])}
         if needed <= produto_ids:
             count += 1
@@ -275,10 +285,13 @@ def contar_coqueteis_possiveis():
 @app.route("/")
 def index():
     """Dashboard principal — Meu Bar."""
-    total_itens = len(produtos_table.all())
-    coqueteis_possiveis = contar_coqueteis_possiveis()
-    cocktails = listar_cocktails()
+    # ⚡ Bolt: Fetch base data once per request to avoid redundant database hits
     produtos = listar_produtos()
+    cocktails_db = cocktails_table.all()
+
+    total_itens = len(produtos)
+    coqueteis_possiveis = contar_coqueteis_possiveis(produtos, cocktails_db)
+    cocktails = listar_cocktails(produtos, cocktails_db)
 
     # Agrupar produtos por tipo
     tipos_unicos = sorted(set(p["tipo"] for p in produtos))
