@@ -1,42 +1,34 @@
 {% extends "base.html" %}
 {% block conteudo %}
-<div class="card">
-  <h2>Visualizar produto</h2>
-  {% if produtos %}
-  <table>
-    <thead>
-      <tr>
-        <th class="center">ID</th>
-        <th>Produto</th>
-        <th>Tipo</th>
-        <th class="num">Volume (ml)</th>
-        <th class="center">Ações</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for p in produtos %}
-      <tr>
-        <td class="center">{{ "%05d"|format(p["id"]) }}</td>
-        <td>{{ p["produto"] }}</td>
-        <td>{{ p["tipo"] }}</td>
-        <td class="num">{{ p["volume_ml"] }}</td>
-        <td class="center">
-          <form class="form-inline" method="post"
-                action="{{ url_for('remover_produto_route', produto_id=p['id']) }}"
-                onsubmit="return confirm('Remover este produto?');">
-            <button type="submit" class="btn perigo">Remover</button>
-          </form>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  <p class="vazio">{{ produtos|length }} produto(s) cadastrado(s).</p>
-  {% else %}
-  <p class="vazio">Nenhum produto cadastrado.</p>
-  {% endif %}
-  <div class="acoes">
-    <a class="btn" href="{{ url_for('visualizar') }}">Atualizar lista</a>
+<div class="card-header">
+  <h2 style="margin-bottom: 0;">Inventario</h2>
+  <a href="{{ url_for('cadastrar') }}" class="btn btn-sm btn-gold">+ Adicionar Item</a>
+</div>
+
+{% if produtos %}
+  {% for p in produtos %}
+  <div class="inv-item">
+    <div class="inv-icon">&#127866;</div>
+    <div class="inv-info">
+      <div class="inv-name">{{ p.produto }}</div>
+      <div class="inv-detail">{{ p.tipo }} &bull; {{ p.volume_ml }}ml</div>
+    </div>
+    <div class="inv-actions" style="display: flex; gap: 6px;">
+      <a href="{{ url_for('editar_produto', produto_id=p.id) }}" class="btn btn-gold btn-sm">Editar</a>
+      <form class="form-inline" method="post"
+            action="{{ url_for('remover_produto_route', produto_id=p.id) }}"
+            onsubmit="return confirm('Remover este produto?');">
+        <button type="submit" class="btn btn-danger btn-sm">Remover</button>
+      </form>
+    </div>
   </div>
+  {% endfor %}
+  <p class="vazio">{{ produtos|length }} produto(s) cadastrado(s).</p>
+{% else %}
+  <p class="vazio">Nenhum produto cadastrado.</p>
+{% endif %}
+
+<div class="acoes">
+  <a class="btn btn-secondary" href="{{ url_for('visualizar') }}">Atualizar lista</a>
 </div>
 {% endblock %}

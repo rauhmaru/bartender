@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<!-- Meu Bar intro -->
+<div style="margin-bottom: 20px;">
+  <h1 class="section-title" style="font-size: 24px;">Meu Bar</h1>
+  <p class="section-subtitle">Gerencie seu estoque e descubra o que voce pode preparar hoje a noite.</p>
+</div>
+
+<!-- Stats -->
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="stat-label">Itens Totais</div>
+    <div class="stat-value gold">{{ total_itens }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Coqueteis Possiveis</div>
+    <div class="stat-value teal">{{ coqueteis_possiveis }}</div>
+  </div>
+</div>
+
+<!-- Pronto para Misturar -->
+{% if cocktails %}
+<div style="margin-bottom: 24px;">
+  <div class="card-header">
+    <span class="section-title" style="font-size: 18px;">Pronto para Misturar</span>
+    <a href="{{ url_for('visualizar_cocktails') }}" class="btn btn-sm btn-secondary">Ver todos</a>
+  </div>
+  <div style="display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px;">
+    {% for c in cocktails[:6] %}
+    <div style="min-width: 180px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; flex-shrink: 0;">
+      <div style="font-size: 11px; font-weight: 700; color: var(--teal); text-transform: uppercase; margin-bottom: 8px;">
+        100% DISPONIVEL
+      </div>
+      <div style="font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 700; color: var(--text-primary);">{{ c.nome }}</div>
+      <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">{{ c.tacaria }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Inventario -->
+<div style="margin-bottom: 24px;">
+  <div class="card-header">
+    <span class="section-title" style="font-size: 18px;">Inventario</span>
+    <a href="{{ url_for('cadastrar') }}" class="btn btn-sm btn-gold">+ Adicionar Item</a>
+  </div>
+
+  {% if tipos_unicos %}
+  <!-- Tabs por tipo -->
+  <div class="tabs" id="tipoTabs">
+    <button class="tab ativo" onclick="filtrarTipo(this, 'todos')">Todos</button>
+    {% for tipo in tipos_unicos %}
+    <button class="tab" onclick="filtrarTipo(this, '{{ tipo }}')">{{ tipo }}</button>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if produtos %}
+  <div id="inventarioLista">
+    {% for p in produtos %}
+    <div class="inv-item" data-tipo="{{ p.tipo }}">
+      <div class="inv-icon">&#127866;</div>
+      <div class="inv-info">
+        <div class="inv-name">{{ p.produto }}</div>
+        <div class="inv-detail">{{ p.tipo }} &bull; {{ p.volume_ml }}ml</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="vazio">Nenhum produto cadastrado.</p>
+  {% endif %}
+</div>
+
+<!-- CTA -->
+<div class="cta-section">
+  <div class="cta-icon">&#128722;</div>
+  <div class="cta-title">Faltando algo?</div>
+  <div class="cta-desc">Adicione novos produtos ao seu estoque para desbloquear mais receitas.</div>
+  <a href="{{ url_for('cadastrar') }}" class="btn btn-gold">Adicionar a Lista</a>
+</div>
+
+<script>
+function filtrarTipo(btn, tipo) {
+  document.querySelectorAll('#tipoTabs .tab').forEach(function(t) { t.classList.remove('ativo'); });
+  btn.classList.add('ativo');
+  document.querySelectorAll('#inventarioLista .inv-item').forEach(function(item) {
+    if (tipo === 'todos' || item.dataset.tipo === tipo) {
+      item.style.display = '';
+    } else {
+      item.style.display = 'none';
+    }
+  });
+}
+</script>
+{% endblock %}

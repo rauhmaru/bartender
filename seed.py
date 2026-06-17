@@ -1,24 +1,23 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Seed de dados — 30 receitas de coquetéis refrescantes.
+Seed de dados — 30 receitas de coqueteis refrescantes (NoSQL / TinyDB).
 
 Cadastra primeiro os produtos (ingredientes) e depois as 30 receitas,
 relacionando cada ingrediente a um produto cadastrado.
 
-Drinks com base em gin, rum, vodka, whisky e cachaça (6 de cada).
+Drinks com base em gin, rum, vodka, whisky e cachaca (6 de cada).
 
 Uso:
     python3 seed.py
 
-O script é seguro para rodar mais de uma vez:
-- Produtos já existentes (mesmo nome) não são duplicados.
-- Cocktails já existentes (mesmo nome) são ignorados.
+O script e seguro para rodar mais de uma vez:
+- Produtos ja existentes (mesmo nome) nao sao duplicados.
+- Cocktails ja existentes (mesmo nome) sao ignorados.
 """
 
 from app import (
     app,
-    init_db,
     inserir_cocktail,
     inserir_produto,
     inserir_tipo,
@@ -28,7 +27,7 @@ from app import (
 )
 
 # --------------------------------------------------------------------------- #
-# Produtos (ingredientes): (nome, tipo, volume_ml de referência)
+# Produtos (ingredientes): (nome, tipo, volume_ml de referencia)
 # --------------------------------------------------------------------------- #
 PRODUTOS = [
     # Destilados
@@ -37,22 +36,22 @@ PRODUTOS = [
     ("Rum Escuro", "Destilado", 750),
     ("Vodka", "Destilado", 750),
     ("Whisky Bourbon", "Destilado", 750),
-    ("Cachaça", "Destilado", 700),
-    # Refrigerantes / água
-    ("Água Tônica", "Refrigerante", 500),
-    ("Água com Gás", "Refrigerante", 500),
+    ("Cachaca", "Destilado", 700),
+    # Refrigerantes / agua
+    ("Agua Tonica", "Refrigerante", 500),
+    ("Agua com Gas", "Refrigerante", 500),
     ("Refrigerante de Cola", "Refrigerante", 350),
     ("Ginger Beer", "Refrigerante", 350),
     ("Ginger Ale", "Refrigerante", 350),
     # Sucos
-    ("Suco de Limão", "Suco", 1000),
+    ("Suco de Limao", "Suco", 1000),
     ("Suco de Laranja", "Suco", 1000),
     ("Suco de Abacaxi", "Suco", 1000),
     ("Suco de Cranberry", "Suco", 1000),
     ("Suco de Toranja", "Suco", 1000),
-    # Adoçantes / xaropes
-    ("Xarope de Açúcar", "Adoçante", 500),
-    ("Açúcar", "Adoçante", 1000),
+    # Adocantes / xaropes
+    ("Xarope de Acucar", "Adocante", 500),
+    ("Acucar", "Adocante", 1000),
     ("Granadina", "Xarope", 700),
     # Licores / vinhos / bitters
     ("Licor de Laranja", "Licor", 700),
@@ -61,148 +60,148 @@ PRODUTOS = [
     ("Vinho Tinto", "Vinho", 750),
     ("Angostura Bitters", "Bitter", 200),
     # Frutas / ervas / vegetais
-    ("Hortelã", "Erva", 50),
-    ("Manjericão", "Erva", 50),
+    ("Hortela", "Erva", 50),
+    ("Manjericao", "Erva", 50),
     ("Pepino", "Vegetal", 100),
     ("Morango", "Fruta", 100),
-    ("Maracujá", "Fruta", 100),
-    ("Limão", "Fruta", 100),
-    # Laticínios
-    ("Leite de Coco", "Laticínio", 500),
-    ("Leite Condensado", "Laticínio", 395),
+    ("Maracuja", "Fruta", 100),
+    ("Limao", "Fruta", 100),
+    # Laticinios
+    ("Leite de Coco", "Laticinio", 500),
+    ("Leite Condensado", "Laticinio", 395),
 ]
 
 # --------------------------------------------------------------------------- #
-# Cocktails: (nome, taçaria, receita, [(produto, quantidade_ml), ...])
+# Cocktails: (nome, tacaria, receita, [(produto, quantidade_ml), ...])
 # --------------------------------------------------------------------------- #
 COCKTAILS = [
     # ----------------------------- GIN -----------------------------------
     (
-        "Gin Tônica",
-        "Taça de gin",
-        "Encha a taça com gelo, adicione o gin e complete com a água tônica. "
-        "Finalize espremendo o limão e decore com rodelas.",
-        [("Gin", 50), ("Água Tônica", 150), ("Limão", 10)],
+        "Gin Tonica",
+        "Taca de gin",
+        "Encha a taca com gelo, adicione o gin e complete com a agua tonica. "
+        "Finalize espremendo o limao e decore com rodelas.",
+        [("Gin", 50), ("Agua Tonica", 150), ("Limao", 10)],
     ),
     (
         "Tom Collins",
         "Copo Collins",
-        "Misture gin, suco de limão e xarope com gelo, coe no copo com gelo "
-        "e complete com água com gás. Decore com limão.",
-        [("Gin", 50), ("Suco de Limão", 25), ("Xarope de Açúcar", 15), ("Água com Gás", 60)],
+        "Misture gin, suco de limao e xarope com gelo, coe no copo com gelo "
+        "e complete com agua com gas. Decore com limao.",
+        [("Gin", 50), ("Suco de Limao", 25), ("Xarope de Acucar", 15), ("Agua com Gas", 60)],
     ),
     (
         "Gin Basil Smash",
         "Copo baixo",
-        "Macere o manjericão com o xarope, adicione gin e suco de limão, "
+        "Macere o manjericao com o xarope, adicione gin e suco de limao, "
         "bata com gelo e coe sobre gelo fresco.",
-        [("Gin", 50), ("Suco de Limão", 25), ("Xarope de Açúcar", 20), ("Manjericão", 8)],
+        [("Gin", 50), ("Suco de Limao", 25), ("Xarope de Acucar", 20), ("Manjericao", 8)],
     ),
     (
         "Cucumber Gin Cooler",
         "Copo highball",
-        "Macere o pepino, adicione gin, suco de limão e xarope, bata com gelo, "
-        "coe no copo com gelo e complete com água com gás.",
+        "Macere o pepino, adicione gin, suco de limao e xarope, bata com gelo, "
+        "coe no copo com gelo e complete com agua com gas.",
         [
             ("Gin", 50),
             ("Pepino", 30),
-            ("Suco de Limão", 20),
-            ("Xarope de Açúcar", 15),
-            ("Água com Gás", 60),
+            ("Suco de Limao", 20),
+            ("Xarope de Acucar", 15),
+            ("Agua com Gas", 60),
         ],
     ),
     (
         "Gin Fizz",
         "Copo highball",
-        "Bata gin, suco de limão e xarope com gelo, coe no copo e complete "
-        "com água com gás bem gelada.",
-        [("Gin", 50), ("Suco de Limão", 25), ("Xarope de Açúcar", 15), ("Água com Gás", 80)],
+        "Bata gin, suco de limao e xarope com gelo, coe no copo e complete "
+        "com agua com gas bem gelada.",
+        [("Gin", 50), ("Suco de Limao", 25), ("Xarope de Acucar", 15), ("Agua com Gas", 80)],
     ),
     (
         "Southside",
-        "Taça coupe",
-        "Bata gin, suco de limão, xarope e hortelã com gelo e coe na taça. "
-        "Decore com folhas de hortelã.",
-        [("Gin", 50), ("Suco de Limão", 25), ("Xarope de Açúcar", 20), ("Hortelã", 6)],
+        "Taca coupe",
+        "Bata gin, suco de limao, xarope e hortela com gelo e coe na taca. "
+        "Decore com folhas de hortela.",
+        [("Gin", 50), ("Suco de Limao", 25), ("Xarope de Acucar", 20), ("Hortela", 6)],
     ),
     # ----------------------------- RUM -----------------------------------
     (
         "Mojito",
         "Copo highball",
-        "Macere a hortelã com o xarope e o suco de limão, adicione o rum e gelo, "
-        "complete com água com gás e mexa.",
+        "Macere a hortela com o xarope e o suco de limao, adicione o rum e gelo, "
+        "complete com agua com gas e mexa.",
         [
             ("Rum Branco", 50),
-            ("Suco de Limão", 25),
-            ("Xarope de Açúcar", 20),
-            ("Hortelã", 8),
-            ("Água com Gás", 60),
+            ("Suco de Limao", 25),
+            ("Xarope de Acucar", 20),
+            ("Hortela", 8),
+            ("Agua com Gas", 60),
         ],
     ),
     (
         "Daiquiri",
-        "Taça coupe",
-        "Bata rum, suco de limão e xarope com bastante gelo e coe na taça gelada.",
-        [("Rum Branco", 60), ("Suco de Limão", 25), ("Xarope de Açúcar", 15)],
+        "Taca coupe",
+        "Bata rum, suco de limao e xarope com bastante gelo e coe na taca gelada.",
+        [("Rum Branco", 60), ("Suco de Limao", 25), ("Xarope de Acucar", 15)],
     ),
     (
         "Cuba Libre",
         "Copo highball",
-        "Coloque gelo no copo, adicione o rum e o suco de limão e complete "
+        "Coloque gelo no copo, adicione o rum e o suco de limao e complete "
         "com refrigerante de cola.",
-        [("Rum Branco", 50), ("Refrigerante de Cola", 120), ("Suco de Limão", 10)],
+        [("Rum Branco", 50), ("Refrigerante de Cola", 120), ("Suco de Limao", 10)],
     ),
     (
         "Rum Punch",
-        "Copo furacão",
-        "Misture os sucos com o rum sobre gelo, adicione a granadina por último "
-        "para o efeito degradê.",
+        "Copo furacao",
+        "Misture os sucos com o rum sobre gelo, adicione a granadina por ultimo "
+        "para o efeito degrade.",
         [
             ("Rum Escuro", 50),
             ("Suco de Laranja", 60),
             ("Suco de Abacaxi", 60),
-            ("Suco de Limão", 15),
+            ("Suco de Limao", 15),
             ("Granadina", 10),
         ],
     ),
     (
         "Hemingway Daiquiri",
-        "Taça coupe",
-        "Bata todos os ingredientes com gelo e coe na taça. Equilíbrio cítrico "
+        "Taca coupe",
+        "Bata todos os ingredientes com gelo e coe na taca. Equilibrio citrico "
         "e levemente amargo da toranja.",
         [
             ("Rum Branco", 50),
             ("Suco de Toranja", 30),
-            ("Suco de Limão", 15),
+            ("Suco de Limao", 15),
             ("Licor de Maraschino", 10),
-            ("Xarope de Açúcar", 10),
+            ("Xarope de Acucar", 10),
         ],
     ),
     (
         "Dark 'n' Stormy",
         "Copo highball",
-        "Encha o copo com gelo, adicione a ginger beer e o suco de limão e "
+        "Encha o copo com gelo, adicione a ginger beer e o suco de limao e "
         "despeje o rum escuro por cima para formar camadas.",
-        [("Rum Escuro", 60), ("Ginger Beer", 120), ("Suco de Limão", 10)],
+        [("Rum Escuro", 60), ("Ginger Beer", 120), ("Suco de Limao", 10)],
     ),
     # ---------------------------- VODKA ----------------------------------
     (
         "Moscow Mule",
         "Caneca de cobre",
-        "Coloque gelo na caneca, adicione vodka e suco de limão e complete "
+        "Coloque gelo na caneca, adicione vodka e suco de limao e complete "
         "com ginger beer.",
-        [("Vodka", 50), ("Ginger Beer", 120), ("Suco de Limão", 15)],
+        [("Vodka", 50), ("Ginger Beer", 120), ("Suco de Limao", 15)],
     ),
     (
         "Cosmopolitan",
-        "Taça coupe",
-        "Bata todos os ingredientes com gelo e coe na taça gelada. "
+        "Taca coupe",
+        "Bata todos os ingredientes com gelo e coe na taca gelada. "
         "Decore com raspas de laranja.",
         [
             ("Vodka", 40),
             ("Licor de Laranja", 15),
             ("Suco de Cranberry", 30),
-            ("Suco de Limão", 15),
+            ("Suco de Limao", 15),
         ],
     ),
     (
@@ -219,118 +218,117 @@ COCKTAILS = [
         [("Vodka", 50), ("Suco de Laranja", 120)],
     ),
     (
-        "Vodka Tônica",
+        "Vodka Tonica",
         "Copo highball",
-        "Encha o copo com gelo, adicione a vodka, complete com água tônica "
-        "e espreme o limão.",
-        [("Vodka", 50), ("Água Tônica", 150), ("Limão", 10)],
+        "Encha o copo com gelo, adicione a vodka, complete com agua tonica "
+        "e espreme o limao.",
+        [("Vodka", 50), ("Agua Tonica", 150), ("Limao", 10)],
     ),
     (
         "Caipiroska",
         "Copo baixo",
-        "Macere o limão com o açúcar, adicione gelo e a vodka e mexa bem.",
-        [("Vodka", 50), ("Limão", 30), ("Açúcar", 15)],
+        "Macere o limao com o acucar, adicione gelo e a vodka e mexa bem.",
+        [("Vodka", 50), ("Limao", 30), ("Acucar", 15)],
     ),
     # ---------------------------- WHISKY ---------------------------------
     (
         "Whisky Sour",
         "Copo baixo",
-        "Bata whisky, suco de limão e xarope com gelo e coe sobre gelo fresco.",
-        [("Whisky Bourbon", 50), ("Suco de Limão", 25), ("Xarope de Açúcar", 15)],
+        "Bata whisky, suco de limao e xarope com gelo e coe sobre gelo fresco.",
+        [("Whisky Bourbon", 50), ("Suco de Limao", 25), ("Xarope de Acucar", 15)],
     ),
     (
         "Whisky Highball",
         "Copo highball",
-        "Encha o copo com gelo, adicione o whisky e complete com água com gás.",
-        [("Whisky Bourbon", 50), ("Água com Gás", 120)],
+        "Encha o copo com gelo, adicione o whisky e complete com agua com gas.",
+        [("Whisky Bourbon", 50), ("Agua com Gas", 120)],
     ),
     (
         "Mint Julep",
         "Copo julep",
-        "Macere a hortelã com o xarope, encha o copo com gelo picado e adicione "
-        "o whisky. Mexa até gelar.",
-        [("Whisky Bourbon", 60), ("Xarope de Açúcar", 15), ("Hortelã", 8)],
+        "Macere a hortela com o xarope, encha o copo com gelo picado e adicione "
+        "o whisky. Mexa ate gelar.",
+        [("Whisky Bourbon", 60), ("Xarope de Acucar", 15), ("Hortela", 8)],
     ),
     (
         "John Collins",
         "Copo Collins",
-        "Misture whisky, suco de limão e xarope com gelo, coe no copo com gelo "
-        "e complete com água com gás.",
+        "Misture whisky, suco de limao e xarope com gelo, coe no copo com gelo "
+        "e complete com agua com gas.",
         [
             ("Whisky Bourbon", 50),
-            ("Suco de Limão", 25),
-            ("Xarope de Açúcar", 15),
-            ("Água com Gás", 60),
+            ("Suco de Limao", 25),
+            ("Xarope de Acucar", 15),
+            ("Agua com Gas", 60),
         ],
     ),
     (
         "Whisky Ginger",
         "Copo highball",
-        "Coloque gelo, adicione o whisky e o suco de limão e complete com "
+        "Coloque gelo, adicione o whisky e o suco de limao e complete com "
         "ginger ale.",
-        [("Whisky Bourbon", 50), ("Ginger Ale", 120), ("Suco de Limão", 10)],
+        [("Whisky Bourbon", 50), ("Ginger Ale", 120), ("Suco de Limao", 10)],
     ),
     (
         "New York Sour",
         "Copo baixo",
-        "Bata whisky, suco de limão e xarope com gelo, coe sobre gelo e flutue "
+        "Bata whisky, suco de limao e xarope com gelo, coe sobre gelo e flutue "
         "o vinho tinto por cima.",
         [
             ("Whisky Bourbon", 50),
-            ("Suco de Limão", 25),
-            ("Xarope de Açúcar", 15),
+            ("Suco de Limao", 25),
+            ("Xarope de Acucar", 15),
             ("Vinho Tinto", 15),
         ],
     ),
-    # --------------------------- CACHAÇA ---------------------------------
+    # --------------------------- CACHACA ---------------------------------
     (
         "Caipirinha",
         "Copo baixo",
-        "Macere o limão com o açúcar, encha o copo com gelo e adicione a cachaça. "
+        "Macere o limao com o acucar, encha o copo com gelo e adicione a cachaca. "
         "Mexa bem.",
-        [("Cachaça", 60), ("Limão", 30), ("Açúcar", 20)],
+        [("Cachaca", 60), ("Limao", 30), ("Acucar", 20)],
     ),
     (
         "Caipirinha de Morango",
         "Copo baixo",
-        "Macere o morango e o limão com o açúcar, adicione gelo e a cachaça e "
+        "Macere o morango e o limao com o acucar, adicione gelo e a cachaca e "
         "mexa.",
-        [("Cachaça", 50), ("Morango", 40), ("Limão", 15), ("Açúcar", 15)],
+        [("Cachaca", 50), ("Morango", 40), ("Limao", 15), ("Acucar", 15)],
     ),
     (
-        "Caipirinha de Maracujá",
+        "Caipirinha de Maracuja",
         "Copo baixo",
-        "Misture a polpa de maracujá com o açúcar, adicione gelo e a cachaça e "
+        "Misture a polpa de maracuja com o acucar, adicione gelo e a cachaca e "
         "mexa bem.",
-        [("Cachaça", 50), ("Maracujá", 40), ("Açúcar", 15)],
+        [("Cachaca", 50), ("Maracuja", 40), ("Acucar", 15)],
     ),
     (
         "Rabo de Galo",
         "Copo baixo",
-        "Misture cachaça, vermute tinto e o bitter com gelo e mexa. Coe ou sirva "
+        "Misture cachaca, vermute tinto e o bitter com gelo e mexa. Coe ou sirva "
         "com gelo.",
-        [("Cachaça", 50), ("Vermute Tinto", 30), ("Angostura Bitters", 2)],
+        [("Cachaca", 50), ("Vermute Tinto", 30), ("Angostura Bitters", 2)],
     ),
     (
         "Leblon Smash",
         "Copo baixo",
-        "Macere a hortelã com o xarope e o suco de limão, adicione a cachaça e "
+        "Macere a hortela com o xarope e o suco de limao, adicione a cachaca e "
         "gelo e bata rapidamente.",
-        [("Cachaça", 50), ("Suco de Limão", 25), ("Xarope de Açúcar", 20), ("Hortelã", 6)],
+        [("Cachaca", 50), ("Suco de Limao", 25), ("Xarope de Acucar", 20), ("Hortela", 6)],
     ),
     (
         "Batida de Coco",
-        "Taça",
-        "Bata cachaça, leite de coco e leite condensado com gelo até ficar "
+        "Taca",
+        "Bata cachaca, leite de coco e leite condensado com gelo ate ficar "
         "cremoso e sirva gelado.",
-        [("Cachaça", 50), ("Leite de Coco", 60), ("Leite Condensado", 30)],
+        [("Cachaca", 50), ("Leite de Coco", 60), ("Leite Condensado", 30)],
     ),
 ]
 
 
 def run():
     """Insere produtos e cocktails de forma idempotente."""
-    init_db()
     with app.app_context():
         existentes = {p["produto"]: p["id"] for p in listar_produtos()}
 

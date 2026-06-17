@@ -1,43 +1,36 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Gerenciador de Bebidas e Receitas de Cocktails (versao WEB)
-===========================================================
+SGDC - Sistema de Gestao de Destilados e Coqueteis (versao WEB)
+================================================================
 
-Aplicacao web para cadastro e visualizacao de produtos (bebidas),
-com interface no navegador (Flask) e persistencia em SQLite.
+Aplicacao web para cadastro e visualizacao de produtos (bebidas)
+e receitas de coqueteis, com interface no navegador (Flask) e
+persistencia em banco de dados NoSQL (TinyDB).
 
 Funcionalidades
 ---------------
-- Menu de navegacao com duas opcoes principais:
-    * "Cadastrar produto"
-    * "Visualizar produto"
-- Cadastrar produto:
-    * ID automatico, sequencial, formatado com 5 digitos (00001, 00002, ...).
-    * Produto (texto, ate 50 caracteres, obrigatorio).
-    * Tipo (texto, ate 30 caracteres, obrigatorio).
-    * Volume ml (inteiro, 0 a 99999, obrigatorio).
-    * Validacao no servidor e insercao no banco.
-    * Mensagens de sucesso/erro (flash messages).
-- Visualizar produto:
-    * Tabela com colunas ID, Produto, Tipo, Volume (ml).
-    * ID exibido com 5 digitos.
-    * Mensagem adequada quando nao ha produtos.
+- Dashboard com estatisticas (total de itens, coqueteis possiveis)
+- Cadastro e listagem de produtos
+- Cadastro e listagem de tipos de produto
+- Cadastro e visualizacao de receitas de coqueteis
+- Filtro AND de ingredientes nas receitas
+- Remocao de produtos, tipos e receitas (com bloqueio de integridade)
 
 Requisitos / Dependencias
 -------------------------
 - Python 3 (testado em 3.10+).
-- Flask (instale com: pip install flask).
-- sqlite3 faz parte da biblioteca padrao.
+- Flask (pip install flask).
+- TinyDB (pip install tinydb).
 
 Como executar
 -------------
-    pip install flask
+    pip install -r requirements.txt
     python3 app.py
 
 Em seguida abra no navegador:  http://127.0.0.1:5000
 
-Na primeira execucao o arquivo de banco "bebidas.db" e criado
+Na primeira execucao o arquivo de banco "sgdc_db.json" e criado
 automaticamente no mesmo diretorio do script.
 
 Variaveis de ambiente opcionais:
@@ -46,244 +39,234 @@ Variaveis de ambiente opcionais:
 """
 
 import os
-import sqlite3
 
 from flask import (
     Flask,
     flash,
-    g,
     redirect,
     render_template,
     request,
     url_for,
 )
+from tinydb import TinyDB, Query, where
 
 # Caminho do banco de dados: mesmo diretorio do script.
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, "bebidas.db")
+DB_PATH = os.path.join(BASE_DIR, "sgdc_db.json")
 
-# Limites de tamanho dos campos (coerentes com o banco).
+# Limites de tamanho dos campos.
 MAX_PRODUTO = 50
 MAX_TIPO = 30
-MAX_VOLUME = 99999  # inteiro com ate 5 digitos
-MAX_NOME = 60       # nome do cocktail
-MAX_TACARIA = 40    # tipo de copo
-MAX_QUANTIDADE = 99999.0  # ml por ingrediente
+MAX_VOLUME = 99999
+MAX_NOME = 60
+MAX_TACARIA = 40
+MAX_QUANTIDADE = 99999.0
 
 app = Flask(__name__)
-# Chave usada apenas para flash messages (sessao). Pode ser sobrescrita por env.
-app.secret_key = os.environ.get("SECRET_KEY", "gerenciador-bebidas-dev-key")
+app.secret_key = os.environ.get("SECRET_KEY", "sgdc-dev-key")
+
+# TinyDB instance
+db = TinyDB(DB_PATH, indent=2)
+produtos_table = db.table("produtos")
+tipos_table = db.table("tipos")
+cocktails_table = db.table("cocktails")
+
+Produto = Query()
+Tipo = Query()
+Cocktail = Query()
 
 
 # --------------------------------------------------------------------------- #
-# Camada de banco de dados
+# Camada de banco de dados (NoSQL / TinyDB)
 # --------------------------------------------------------------------------- #
-def get_db():
-    """Retorna a conexao SQLite associada ao contexto da requisicao."""
-    if "db" not in g:
-        g.db = sqlite3.connect(DB_PATH)
-        g.db.row_factory = sqlite3.Row
-        g.db.execute("PRAGMA foreign_keys = ON")
-    return g.db
-
-
-@app.teardown_appcontext
-def close_db(_exc):
-    """Fecha a conexao ao final da requisicao."""
-    db = g.pop("db", None)
-    if db is not None:
-        db.close()
-
-
-def init_db():
-    """Cria as tabelas caso ainda nao existam."""
-    try:
-        with sqlite3.connect(DB_PATH) as conn:
-            conn.execute("PRAGMA foreign_keys = ON")
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS produtos (
-                    id        INTEGER PRIMARY KEY AUTOINCREMENT,
-                    produto   TEXT    NOT NULL,
-                    tipo      TEXT    NOT NULL,
-                    volume_ml INTEGER NOT NULL
-                )
-                """
-            )
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS tipos (
-                    id   INTEGER PRIMARY KEY AUTOINCREMENT,
-                    nome TEXT NOT NULL UNIQUE
-                )
-                """
-            )
-            # Popula a tabela de tipos com os tipos ja usados nos produtos.
-            conn.execute(
-                """
-                INSERT OR IGNORE INTO tipos (nome)
-                SELECT DISTINCT tipo FROM produtos
-                WHERE tipo IS NOT NULL AND TRIM(tipo) <> ''
-                """
-            )
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS cocktails (
-                    id      INTEGER PRIMARY KEY AUTOINCREMENT,
-                    nome    TEXT NOT NULL,
-                    tacaria TEXT NOT NULL,
-                    receita TEXT NOT NULL
-                )
-                """
-            )
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS cocktail_ingredientes (
-                    id            INTEGER PRIMARY KEY AUTOINCREMENT,
-                    cocktail_id   INTEGER NOT NULL,
-                    produto_id    INTEGER NOT NULL,
-                    quantidade_ml REAL    NOT NULL,
-                    FOREIGN KEY (cocktail_id) REFERENCES cocktails (id) ON DELETE CASCADE,
-                    FOREIGN KEY (produto_id) REFERENCES produtos (id)
-                )
-                """
-            )
-    except sqlite3.Error as exc:
-        raise RuntimeError(f"Falha ao criar/abrir o banco de dados: {exc}") from exc
+def _next_id(table):
+    """Retorna o proximo ID sequencial para a tabela."""
+    all_docs = table.all()
+    if not all_docs:
+        return 1
+    return max(doc.get("id", 0) for doc in all_docs) + 1
 
 
 def proximo_id():
-    """Retorna o proximo ID que sera atribuido a um novo registro."""
-    cur = get_db().execute("SELECT MAX(id) AS m FROM produtos")
-    resultado = cur.fetchone()["m"]
-    return (resultado or 0) + 1
+    """Retorna o proximo ID de produtos."""
+    return _next_id(produtos_table)
 
 
 def inserir_produto(produto, tipo, volume_ml):
     """Insere um novo produto e retorna o ID gerado."""
-    db = get_db()
-    cur = db.execute(
-        "INSERT INTO produtos (produto, tipo, volume_ml) VALUES (?, ?, ?)",
-        (produto, tipo, volume_ml),
-    )
-    db.commit()
-    return cur.lastrowid
+    new_id = _next_id(produtos_table)
+    produtos_table.insert({
+        "id": new_id,
+        "produto": produto,
+        "tipo": tipo,
+        "volume_ml": volume_ml,
+    })
+    return new_id
 
 
 def listar_produtos():
-    """Retorna a lista de produtos (linhas com id, produto, tipo, volume_ml)."""
-    cur = get_db().execute(
-        "SELECT id, produto, tipo, volume_ml FROM produtos ORDER BY id"
-    )
-    return cur.fetchall()
+    """Retorna a lista de produtos ordenada por ID."""
+    docs = produtos_table.all()
+    return sorted(docs, key=lambda d: d.get("id", 0))
 
 
 def listar_tipos():
-    """Retorna a lista de tipos de produto cadastrados (id, nome)."""
-    cur = get_db().execute(
-        "SELECT id, nome FROM tipos ORDER BY nome COLLATE NOCASE"
-    )
-    return cur.fetchall()
+    """Retorna a lista de tipos ordenada por nome (case-insensitive)."""
+    docs = tipos_table.all()
+    return sorted(docs, key=lambda d: d.get("nome", "").lower())
 
 
 def inserir_tipo(nome):
-    """Insere um novo tipo de produto e retorna o ID gerado."""
-    db = get_db()
-    cur = db.execute("INSERT INTO tipos (nome) VALUES (?)", (nome,))
-    db.commit()
-    return cur.lastrowid
+    """Insere um novo tipo. Levanta ValueError se ja existir."""
+    existing = tipos_table.search(Tipo.nome == nome)
+    if existing:
+        raise ValueError(f"O tipo '{nome}' ja esta cadastrado.")
+    new_id = _next_id(tipos_table)
+    tipos_table.insert({"id": new_id, "nome": nome})
+    return new_id
+
+
+def obter_produto(produto_id):
+    """Retorna um produto pelo ID ou None."""
+    results = produtos_table.search(Produto.id == produto_id)
+    return results[0] if results else None
+
+
+def atualizar_produto(produto_id, produto, tipo, volume_ml):
+    """Atualiza os campos de um produto existente."""
+    produtos_table.update(
+        {"produto": produto, "tipo": tipo, "volume_ml": volume_ml},
+        Produto.id == produto_id,
+    )
 
 
 def remover_produto(produto_id):
-    """Remove um produto pelo ID."""
-    db = get_db()
-    db.execute("DELETE FROM produtos WHERE id = ?", (produto_id,))
-    db.commit()
+    """Remove um produto pelo ID. Levanta ValueError se em uso."""
+    # Check if product is used in any cocktail
+    all_cocktails = cocktails_table.all()
+    for c in all_cocktails:
+        for ing in c.get("ingredientes", []):
+            if ing.get("produto_id") == produto_id:
+                raise ValueError(
+                    "Nao e possivel remover: o produto esta em uso em uma ou mais receitas."
+                )
+    produtos_table.remove(Produto.id == produto_id)
+
+
+def obter_cocktail(cocktail_id):
+    """Retorna um cocktail pelo ID ou None."""
+    results = cocktails_table.search(Cocktail.id == cocktail_id)
+    return results[0] if results else None
+
+
+def atualizar_cocktail(cocktail_id, nome, tacaria, receita, ingredientes):
+    """Atualiza um cocktail existente com ingredientes embutidos."""
+    cocktails_table.update(
+        {
+            "nome": nome,
+            "tacaria": tacaria,
+            "receita": receita,
+            "ingredientes": [
+                {"produto_id": pid, "quantidade_ml": qtd}
+                for pid, qtd in ingredientes
+            ],
+        },
+        Cocktail.id == cocktail_id,
+    )
 
 
 def remover_cocktail(cocktail_id):
-    """Remove um cocktail (e seus ingredientes, via cascade) pelo ID."""
-    db = get_db()
-    db.execute("DELETE FROM cocktails WHERE id = ?", (cocktail_id,))
-    db.commit()
+    """Remove um cocktail pelo ID."""
+    cocktails_table.remove(Cocktail.id == cocktail_id)
+
+
+def obter_tipo(tipo_id):
+    """Retorna um tipo pelo ID ou None."""
+    results = tipos_table.search(Tipo.id == tipo_id)
+    return results[0] if results else None
+
+
+def atualizar_tipo(tipo_id, nome):
+    """Atualiza o nome de um tipo e propaga para os produtos que o usam."""
+    old = obter_tipo(tipo_id)
+    if not old:
+        raise ValueError("Tipo nao encontrado.")
+    old_nome = old["nome"]
+    existing = tipos_table.search((Tipo.nome == nome) & (Tipo.id != tipo_id))
+    if existing:
+        raise ValueError(f"O tipo '{nome}' ja esta cadastrado.")
+    tipos_table.update({"nome": nome}, Tipo.id == tipo_id)
+    if old_nome != nome:
+        produtos_table.update({"tipo": nome}, Produto.tipo == old_nome)
 
 
 def remover_tipo(tipo_id):
-    """Remove um tipo de produto pelo ID."""
-    db = get_db()
-    db.execute("DELETE FROM tipos WHERE id = ?", (tipo_id,))
-    db.commit()
+    """Remove um tipo pelo ID."""
+    tipos_table.remove(Tipo.id == tipo_id)
 
 
 def tipo_em_uso(tipo_id):
-    """Retorna True se o tipo (pelo ID) estiver em uso por algum produto."""
-    db = get_db()
-    row = db.execute("SELECT nome FROM tipos WHERE id = ?", (tipo_id,)).fetchone()
-    if row is None:
+    """Retorna True se o tipo estiver em uso por algum produto."""
+    tipo_doc = tipos_table.search(Tipo.id == tipo_id)
+    if not tipo_doc:
         return False
-    usados = db.execute(
-        "SELECT 1 FROM produtos WHERE tipo = ? LIMIT 1", (row["nome"],)
-    ).fetchone()
-    return usados is not None
+    nome = tipo_doc[0]["nome"]
+    usados = produtos_table.search(Produto.tipo == nome)
+    return len(usados) > 0
 
 
 def inserir_cocktail(nome, tacaria, receita, ingredientes):
-    """Insere um cocktail e seus ingredientes numa unica transacao.
+    """Insere um cocktail com ingredientes embutidos (modelo NoSQL).
 
     'ingredientes' e uma lista de tuplas (produto_id, quantidade_ml).
     Retorna o ID do cocktail criado.
     """
-    db = get_db()
-    try:
-        cur = db.execute(
-            "INSERT INTO cocktails (nome, tacaria, receita) VALUES (?, ?, ?)",
-            (nome, tacaria, receita),
-        )
-        cocktail_id = cur.lastrowid
-        db.executemany(
-            "INSERT INTO cocktail_ingredientes (cocktail_id, produto_id, quantidade_ml) "
-            "VALUES (?, ?, ?)",
-            [(cocktail_id, pid, qtd) for pid, qtd in ingredientes],
-        )
-        db.commit()
-        return cocktail_id
-    except sqlite3.Error:
-        db.rollback()
-        raise
+    new_id = _next_id(cocktails_table)
+    cocktails_table.insert({
+        "id": new_id,
+        "nome": nome,
+        "tacaria": tacaria,
+        "receita": receita,
+        "ingredientes": [
+            {"produto_id": pid, "quantidade_ml": qtd}
+            for pid, qtd in ingredientes
+        ],
+    })
+    return new_id
 
 
 def listar_cocktails():
-    """Retorna os cocktails com seus ingredientes agrupados.
-
-    Cada item: dict(id, nome, tacaria, receita, ingredientes=[(produto, qtd)]).
-    """
-    db = get_db()
-    cocktails = db.execute(
-        "SELECT id, nome, tacaria, receita FROM cocktails ORDER BY id"
-    ).fetchall()
+    """Retorna os cocktails com nomes dos produtos nos ingredientes."""
+    produtos_map = {p["id"]: p["produto"] for p in produtos_table.all()}
+    cocktails = sorted(cocktails_table.all(), key=lambda d: d.get("id", 0))
     resultado = []
     for c in cocktails:
-        ingredientes = db.execute(
-            """
-            SELECT p.id AS produto_id, p.produto AS produto,
-                   ci.quantidade_ml AS quantidade_ml
-            FROM cocktail_ingredientes ci
-            JOIN produtos p ON p.id = ci.produto_id
-            WHERE ci.cocktail_id = ?
-            ORDER BY ci.id
-            """,
-            (c["id"],),
-        ).fetchall()
-        resultado.append(
-            {
-                "id": c["id"],
-                "nome": c["nome"],
-                "tacaria": c["tacaria"],
-                "receita": c["receita"],
-                "ingredientes": ingredientes,
-            }
-        )
+        ings = []
+        for ing in c.get("ingredientes", []):
+            ings.append({
+                "produto_id": ing["produto_id"],
+                "produto": produtos_map.get(ing["produto_id"], "???"),
+                "quantidade_ml": ing["quantidade_ml"],
+            })
+        resultado.append({
+            "id": c["id"],
+            "nome": c["nome"],
+            "tacaria": c["tacaria"],
+            "receita": c["receita"],
+            "ingredientes": ings,
+        })
     return resultado
+
+
+def contar_coqueteis_possiveis():
+    """Conta quantos coqueteis podem ser preparados (todos ingredientes disponiveis)."""
+    produto_ids = {p["id"] for p in produtos_table.all()}
+    count = 0
+    for c in cocktails_table.all():
+        needed = {ing["produto_id"] for ing in c.get("ingredientes", [])}
+        if needed <= produto_ids:
+            count += 1
+    return count
 
 
 # --------------------------------------------------------------------------- #
@@ -291,8 +274,24 @@ def listar_cocktails():
 # --------------------------------------------------------------------------- #
 @app.route("/")
 def index():
-    """Pagina inicial: redireciona para o cadastro."""
-    return redirect(url_for("cadastrar"))
+    """Dashboard principal — Meu Bar."""
+    total_itens = len(produtos_table.all())
+    coqueteis_possiveis = contar_coqueteis_possiveis()
+    cocktails = listar_cocktails()
+    produtos = listar_produtos()
+
+    # Agrupar produtos por tipo
+    tipos_unicos = sorted(set(p["tipo"] for p in produtos))
+
+    return render_template(
+        "dashboard.html",
+        total_itens=total_itens,
+        coqueteis_possiveis=coqueteis_possiveis,
+        cocktails=cocktails,
+        produtos=produtos,
+        tipos_unicos=tipos_unicos,
+        ativo="dashboard",
+    )
 
 
 @app.route("/cadastrar", methods=["GET", "POST"])
@@ -308,18 +307,17 @@ def cadastrar():
         erro = _validar(produto, tipo, volume_txt, tipos_validos)
         if erro:
             flash(erro, "erro")
-            # Reexibe o formulario preservando o que foi digitado.
             return render_template(
                 "cadastrar.html",
                 proximo_id=f"{proximo_id():05d}",
                 tipos=tipos,
                 form={"produto": produto, "tipo": tipo, "volume_ml": volume_txt},
-                ativo="cadastrar",
+                ativo="produtos",
             )
 
         try:
             novo_id = inserir_produto(produto, tipo, int(volume_txt))
-        except (sqlite3.Error, RuntimeError) as exc:
+        except Exception as exc:
             flash(f"Erro ao salvar no banco: {exc}", "erro")
             return redirect(url_for("cadastrar"))
 
@@ -331,7 +329,7 @@ def cadastrar():
         proximo_id=f"{proximo_id():05d}",
         tipos=tipos,
         form={"produto": "", "tipo": "", "volume_ml": ""},
-        ativo="cadastrar",
+        ativo="produtos",
     )
 
 
@@ -351,10 +349,10 @@ def cadastrar_tipo():
             return redirect(url_for("cadastrar_tipo"))
         try:
             inserir_tipo(nome)
-        except sqlite3.IntegrityError:
-            flash(f"O tipo '{nome}' ja esta cadastrado.", "erro")
+        except ValueError as exc:
+            flash(str(exc), "erro")
             return redirect(url_for("cadastrar_tipo"))
-        except (sqlite3.Error, RuntimeError) as exc:
+        except Exception as exc:
             flash(f"Erro ao salvar no banco: {exc}", "erro")
             return redirect(url_for("cadastrar_tipo"))
 
@@ -364,13 +362,13 @@ def cadastrar_tipo():
     return render_template(
         "cadastrar_tipo.html",
         tipos=listar_tipos(),
-        ativo="cadastrar_tipo",
+        ativo="tipos",
     )
 
 
 @app.route("/tipos/<int:tipo_id>/remover", methods=["POST"])
 def remover_tipo_route(tipo_id):
-    """Remove um tipo de produto. Bloqueia se estiver em uso por algum produto."""
+    """Remove um tipo de produto. Bloqueia se estiver em uso."""
     if tipo_em_uso(tipo_id):
         flash(
             "Nao e possivel remover: o tipo esta em uso em um ou mais produtos.",
@@ -379,7 +377,7 @@ def remover_tipo_route(tipo_id):
         return redirect(url_for("cadastrar_tipo"))
     try:
         remover_tipo(tipo_id)
-    except (sqlite3.Error, RuntimeError) as exc:
+    except Exception as exc:
         flash(f"Erro ao remover: {exc}", "erro")
         return redirect(url_for("cadastrar_tipo"))
 
@@ -387,25 +385,125 @@ def remover_tipo_route(tipo_id):
     return redirect(url_for("cadastrar_tipo"))
 
 
+@app.route("/tipos/<int:tipo_id>/editar", methods=["GET", "POST"])
+def editar_tipo(tipo_id):
+    """Tela de edicao de tipo de produto."""
+    tipo_obj = obter_tipo(tipo_id)
+    if not tipo_obj:
+        flash("Tipo nao encontrado.", "erro")
+        return redirect(url_for("cadastrar_tipo"))
+
+    if request.method == "POST":
+        nome = (request.form.get("nome") or "").strip()
+        if not nome:
+            flash("O campo 'Tipo de produto' e obrigatorio.", "erro")
+            return render_template(
+                "editar_tipo.html",
+                tipo_obj=tipo_obj,
+                form={"nome": nome},
+                ativo="tipos",
+            )
+        if len(nome) > MAX_TIPO:
+            flash(
+                f"'Tipo de produto' deve ter no maximo {MAX_TIPO} caracteres.",
+                "erro",
+            )
+            return render_template(
+                "editar_tipo.html",
+                tipo_obj=tipo_obj,
+                form={"nome": nome},
+                ativo="tipos",
+            )
+        try:
+            atualizar_tipo(tipo_id, nome)
+        except ValueError as exc:
+            flash(str(exc), "erro")
+            return render_template(
+                "editar_tipo.html",
+                tipo_obj=tipo_obj,
+                form={"nome": nome},
+                ativo="tipos",
+            )
+        except Exception as exc:
+            flash(f"Erro ao salvar no banco: {exc}", "erro")
+            return redirect(url_for("editar_tipo", tipo_id=tipo_id))
+
+        flash(f"Tipo de produto atualizado com sucesso!", "sucesso")
+        return redirect(url_for("cadastrar_tipo"))
+
+    return render_template(
+        "editar_tipo.html",
+        tipo_obj=tipo_obj,
+        form={"nome": tipo_obj["nome"]},
+        ativo="tipos",
+    )
+
+
 @app.route("/visualizar")
 def visualizar():
     """Tela de visualizacao dos produtos cadastrados."""
     produtos = listar_produtos()
-    return render_template("visualizar.html", produtos=produtos, ativo="visualizar")
+    return render_template("visualizar.html", produtos=produtos, ativo="produtos")
+
+
+@app.route("/visualizar/<int:produto_id>/editar", methods=["GET", "POST"])
+def editar_produto(produto_id):
+    """Tela de edicao de produto."""
+    prod = obter_produto(produto_id)
+    if not prod:
+        flash("Produto nao encontrado.", "erro")
+        return redirect(url_for("visualizar"))
+
+    tipos = listar_tipos()
+
+    if request.method == "POST":
+        produto = (request.form.get("produto") or "").strip()
+        tipo = (request.form.get("tipo") or "").strip()
+        volume_txt = (request.form.get("volume_ml") or "").strip()
+
+        tipos_validos = {t["nome"] for t in tipos}
+        erro = _validar(produto, tipo, volume_txt, tipos_validos)
+        if erro:
+            flash(erro, "erro")
+            return render_template(
+                "editar_produto.html",
+                produto_obj=prod,
+                tipos=tipos,
+                form={"produto": produto, "tipo": tipo, "volume_ml": volume_txt},
+                ativo="produtos",
+            )
+
+        try:
+            atualizar_produto(produto_id, produto, tipo, int(volume_txt))
+        except Exception as exc:
+            flash(f"Erro ao salvar no banco: {exc}", "erro")
+            return redirect(url_for("editar_produto", produto_id=produto_id))
+
+        flash(f"Produto atualizado com sucesso! ID: {produto_id:05d}", "sucesso")
+        return redirect(url_for("visualizar"))
+
+    return render_template(
+        "editar_produto.html",
+        produto_obj=prod,
+        tipos=tipos,
+        form={
+            "produto": prod["produto"],
+            "tipo": prod["tipo"],
+            "volume_ml": str(prod["volume_ml"]),
+        },
+        ativo="produtos",
+    )
 
 
 @app.route("/visualizar/<int:produto_id>/remover", methods=["POST"])
 def remover_produto_route(produto_id):
-    """Remove um produto. Bloqueia se ele estiver em uso em alguma receita."""
+    """Remove um produto. Bloqueia se estiver em uso em alguma receita."""
     try:
         remover_produto(produto_id)
-    except sqlite3.IntegrityError:
-        flash(
-            "Nao e possivel remover: o produto esta em uso em uma ou mais receitas.",
-            "erro",
-        )
+    except ValueError as exc:
+        flash(str(exc), "erro")
         return redirect(url_for("visualizar"))
-    except (sqlite3.Error, RuntimeError) as exc:
+    except Exception as exc:
         flash(f"Erro ao remover: {exc}", "erro")
         return redirect(url_for("visualizar"))
 
@@ -415,7 +513,7 @@ def remover_produto_route(produto_id):
 
 @app.route("/receitas/cocktails/adicionar", methods=["GET", "POST"])
 def adicionar_cocktail():
-    """Adiciona um cocktail: ingredientes (a partir dos produtos), taçaria e receita."""
+    """Adiciona um cocktail."""
     produtos = listar_produtos()
 
     if request.method == "POST":
@@ -434,12 +532,12 @@ def adicionar_cocktail():
                 "adicionar_cocktail.html",
                 produtos=produtos,
                 form={"nome": nome, "tacaria": tacaria, "receita": receita},
-                ativo="cocktails",
+                ativo="receitas",
             )
 
         try:
             novo_id = inserir_cocktail(nome, tacaria, receita, ingredientes)
-        except (sqlite3.Error, RuntimeError) as exc:
+        except Exception as exc:
             flash(f"Erro ao salvar no banco: {exc}", "erro")
             return redirect(url_for("adicionar_cocktail"))
 
@@ -450,13 +548,13 @@ def adicionar_cocktail():
         "adicionar_cocktail.html",
         produtos=produtos,
         form={"nome": "", "tacaria": "", "receita": ""},
-        ativo="cocktails",
+        ativo="receitas",
     )
 
 
 @app.route("/receitas/cocktails")
 def visualizar_cocktails():
-    """Lista os cocktails, com filtro opcional por ingredientes (produtos)."""
+    """Lista os cocktails, com filtro opcional por ingredientes."""
     produtos = listar_produtos()
 
     selecionados = set()
@@ -478,16 +576,84 @@ def visualizar_cocktails():
         produtos=produtos,
         selecionados=selecionados,
         filtro_ativo=bool(selecionados),
-        ativo="ver_cocktails",
+        ativo="receitas",
+    )
+
+
+@app.route("/receitas/cocktails/<int:cocktail_id>/editar", methods=["GET", "POST"])
+def editar_cocktail(cocktail_id):
+    """Tela de edicao de cocktail."""
+    cock = obter_cocktail(cocktail_id)
+    if not cock:
+        flash("Receita nao encontrada.", "erro")
+        return redirect(url_for("visualizar_cocktails"))
+
+    produtos = listar_produtos()
+    produtos_map = {p["id"]: p["produto"] for p in produtos}
+
+    if request.method == "POST":
+        nome = (request.form.get("nome") or "").strip()
+        tacaria = (request.form.get("tacaria") or "").strip()
+        receita = (request.form.get("receita") or "").strip()
+        produto_ids = request.form.getlist("produto_id")
+        quantidades = request.form.getlist("quantidade")
+
+        erro, ingredientes = _validar_cocktail(
+            nome, tacaria, receita, produto_ids, quantidades, produtos
+        )
+        if erro:
+            flash(erro, "erro")
+            ings_form = []
+            for pid_txt, qtd_txt in zip(produto_ids, quantidades):
+                pid_txt = (pid_txt or "").strip()
+                qtd_txt = (qtd_txt or "").strip()
+                if pid_txt or qtd_txt:
+                    ings_form.append({"produto_id": int(pid_txt) if pid_txt.isdigit() else 0, "quantidade_ml": qtd_txt})
+            return render_template(
+                "editar_cocktail.html",
+                cocktail=cock,
+                produtos=produtos,
+                form={"nome": nome, "tacaria": tacaria, "receita": receita},
+                ingredientes_form=ings_form if ings_form else cock.get("ingredientes", []),
+                ativo="receitas",
+            )
+
+        try:
+            atualizar_cocktail(cocktail_id, nome, tacaria, receita, ingredientes)
+        except Exception as exc:
+            flash(f"Erro ao salvar no banco: {exc}", "erro")
+            return redirect(url_for("editar_cocktail", cocktail_id=cocktail_id))
+
+        flash(f"Receita '{nome}' atualizada com sucesso!", "sucesso")
+        return redirect(url_for("visualizar_cocktails"))
+
+    ings_with_names = []
+    for ing in cock.get("ingredientes", []):
+        ings_with_names.append({
+            "produto_id": ing["produto_id"],
+            "quantidade_ml": ing["quantidade_ml"],
+        })
+
+    return render_template(
+        "editar_cocktail.html",
+        cocktail=cock,
+        produtos=produtos,
+        form={
+            "nome": cock["nome"],
+            "tacaria": cock["tacaria"],
+            "receita": cock["receita"],
+        },
+        ingredientes_form=ings_with_names,
+        ativo="receitas",
     )
 
 
 @app.route("/receitas/cocktails/<int:cocktail_id>/remover", methods=["POST"])
 def remover_cocktail_route(cocktail_id):
-    """Remove uma receita (cocktail) e seus ingredientes."""
+    """Remove uma receita (cocktail)."""
     try:
         remover_cocktail(cocktail_id)
-    except (sqlite3.Error, RuntimeError) as exc:
+    except Exception as exc:
         flash(f"Erro ao remover: {exc}", "erro")
         return redirect(url_for("visualizar_cocktails"))
 
@@ -496,7 +662,7 @@ def remover_cocktail_route(cocktail_id):
 
 
 def _validar(produto, tipo, volume_txt, tipos_validos=None):
-    """Valida os campos. Retorna mensagem de erro (str) ou None se tudo ok."""
+    """Valida os campos de produto. Retorna mensagem de erro ou None."""
     if not produto:
         return "O campo 'Produto' e obrigatorio."
     if len(produto) > MAX_PRODUTO:
@@ -518,19 +684,15 @@ def _validar(produto, tipo, volume_txt, tipos_validos=None):
 
 
 def _validar_cocktail(nome, tacaria, receita, produto_ids, quantidades, produtos):
-    """Valida os dados do cocktail.
-
-    Retorna (mensagem_erro, ingredientes). Em caso de sucesso a mensagem e None
-    e 'ingredientes' e uma lista de tuplas (produto_id, quantidade_ml).
-    """
+    """Valida os dados do cocktail."""
     if not nome:
         return "O campo 'Nome do cocktail' e obrigatorio.", []
     if len(nome) > MAX_NOME:
         return f"'Nome do cocktail' deve ter no maximo {MAX_NOME} caracteres.", []
     if not tacaria:
-        return "O campo 'Taçaria' e obrigatorio.", []
+        return "O campo 'Tacaria' e obrigatorio.", []
     if len(tacaria) > MAX_TACARIA:
-        return f"'Taçaria' deve ter no maximo {MAX_TACARIA} caracteres.", []
+        return f"'Tacaria' deve ter no maximo {MAX_TACARIA} caracteres.", []
     if not receita:
         return "O campo 'Receita' e obrigatorio.", []
 
@@ -539,7 +701,6 @@ def _validar_cocktail(nome, tacaria, receita, produto_ids, quantidades, produtos
     for pid_txt, qtd_txt in zip(produto_ids, quantidades):
         pid_txt = (pid_txt or "").strip()
         qtd_txt = (qtd_txt or "").strip().replace(",", ".")
-        # Ignora linhas totalmente vazias.
         if not pid_txt and not qtd_txt:
             continue
         if not pid_txt:
@@ -565,7 +726,6 @@ def _validar_cocktail(nome, tacaria, receita, produto_ids, quantidades, produtos
     return None, ingredientes
 
 
-# Disponibiliza os limites para os templates (atributos maxlength etc.).
 @app.context_processor
 def inject_limits():
     return {
@@ -579,10 +739,9 @@ def inject_limits():
 
 
 def main():
-    """Ponto de entrada: inicializa o banco e sobe o servidor."""
-    init_db()
+    """Ponto de entrada: sobe o servidor."""
     host = os.environ.get("HOST", "127.0.0.1")
-    port = int(os.environ.get("PORT", "80"))
+    port = int(os.environ.get("PORT", "5000"))
     app.run(host=host, port=port, debug=False)
 
 
