@@ -126,6 +126,20 @@ def inserir_tipo(nome):
     return new_id
 
 
+def obter_produto(produto_id):
+    """Retorna um produto pelo ID ou None."""
+    results = produtos_table.search(Produto.id == produto_id)
+    return results[0] if results else None
+
+
+def atualizar_produto(produto_id, produto, tipo, volume_ml):
+    """Atualiza os campos de um produto existente."""
+    produtos_table.update(
+        {"produto": produto, "tipo": tipo, "volume_ml": volume_ml},
+        Produto.id == produto_id,
+    )
+
+
 def remover_produto(produto_id):
     """Remove um produto pelo ID. Levanta ValueError se em uso."""
     # Check if product is used in any cocktail
@@ -137,6 +151,28 @@ def remover_produto(produto_id):
                     "Nao e possivel remover: o produto esta em uso em uma ou mais receitas."
                 )
     produtos_table.remove(Produto.id == produto_id)
+
+
+def obter_cocktail(cocktail_id):
+    """Retorna um cocktail pelo ID ou None."""
+    results = cocktails_table.search(Cocktail.id == cocktail_id)
+    return results[0] if results else None
+
+
+def atualizar_cocktail(cocktail_id, nome, tacaria, receita, ingredientes):
+    """Atualiza um cocktail existente com ingredientes embutidos."""
+    cocktails_table.update(
+        {
+            "nome": nome,
+            "tacaria": tacaria,
+            "receita": receita,
+            "ingredientes": [
+                {"produto_id": pid, "quantidade_ml": qtd}
+                for pid, qtd in ingredientes
+            ],
+        },
+        Cocktail.id == cocktail_id,
+    )
 
 
 def remover_cocktail(cocktail_id):
@@ -336,6 +372,55 @@ def visualizar():
     return render_template("visualizar.html", produtos=produtos, ativo="produtos")
 
 
+@app.route("/visualizar/<int:produto_id>/editar", methods=["GET", "POST"])
+def editar_produto(produto_id):
+    """Tela de edicao de produto."""
+    prod = obter_produto(produto_id)
+    if not prod:
+        flash("Produto nao encontrado.", "erro")
+        return redirect(url_for("visualizar"))
+
+    tipos = listar_tipos()
+
+    if request.method == "POST":
+        produto = (request.form.get("produto") or "").strip()
+        tipo = (request.form.get("tipo") or "").strip()
+        volume_txt = (request.form.get("volume_ml") or "").strip()
+
+        tipos_validos = {t["nome"] for t in tipos}
+        erro = _validar(produto, tipo, volume_txt, tipos_validos)
+        if erro:
+            flash(erro, "erro")
+            return render_template(
+                "editar_produto.html",
+                produto_obj=prod,
+                tipos=tipos,
+                form={"produto": produto, "tipo": tipo, "volume_ml": volume_txt},
+                ativo="produtos",
+            )
+
+        try:
+            atualizar_produto(produto_id, produto, tipo, int(volume_txt))
+        except Exception as exc:
+            flash(f"Erro ao salvar no banco: {exc}", "erro")
+            return redirect(url_for("editar_produto", produto_id=produto_id))
+
+        flash(f"Produto atualizado com sucesso! ID: {produto_id:05d}", "sucesso")
+        return redirect(url_for("visualizar"))
+
+    return render_template(
+        "editar_produto.html",
+        produto_obj=prod,
+        tipos=tipos,
+        form={
+            "produto": prod["produto"],
+            "tipo": prod["tipo"],
+            "volume_ml": str(prod["volume_ml"]),
+        },
+        ativo="produtos",
+    )
+
+
 @app.route("/visualizar/<int:produto_id>/remover", methods=["POST"])
 def remover_produto_route(produto_id):
     """Remove um produto. Bloqueia se estiver em uso em alguma receita."""
@@ -417,6 +502,74 @@ def visualizar_cocktails():
         produtos=produtos,
         selecionados=selecionados,
         filtro_ativo=bool(selecionados),
+        ativo="receitas",
+    )
+
+
+@app.route("/receitas/cocktails/<int:cocktail_id>/editar", methods=["GET", "POST"])
+def editar_cocktail(cocktail_id):
+    """Tela de edicao de cocktail."""
+    cock = obter_cocktail(cocktail_id)
+    if not cock:
+        flash("Receita nao encontrada.", "erro")
+        return redirect(url_for("visualizar_cocktails"))
+
+    produtos = listar_produtos()
+    produtos_map = {p["id"]: p["produto"] for p in produtos}
+
+    if request.method == "POST":
+        nome = (request.form.get("nome") or "").strip()
+        tacaria = (request.form.get("tacaria") or "").strip()
+        receita = (request.form.get("receita") or "").strip()
+        produto_ids = request.form.getlist("produto_id")
+        quantidades = request.form.getlist("quantidade")
+
+        erro, ingredientes = _validar_cocktail(
+            nome, tacaria, receita, produto_ids, quantidades, produtos
+        )
+        if erro:
+            flash(erro, "erro")
+            ings_form = []
+            for pid_txt, qtd_txt in zip(produto_ids, quantidades):
+                pid_txt = (pid_txt or "").strip()
+                qtd_txt = (qtd_txt or "").strip()
+                if pid_txt or qtd_txt:
+                    ings_form.append({"produto_id": int(pid_txt) if pid_txt.isdigit() else 0, "quantidade_ml": qtd_txt})
+            return render_template(
+                "editar_cocktail.html",
+                cocktail=cock,
+                produtos=produtos,
+                form={"nome": nome, "tacaria": tacaria, "receita": receita},
+                ingredientes_form=ings_form if ings_form else cock.get("ingredientes", []),
+                ativo="receitas",
+            )
+
+        try:
+            atualizar_cocktail(cocktail_id, nome, tacaria, receita, ingredientes)
+        except Exception as exc:
+            flash(f"Erro ao salvar no banco: {exc}", "erro")
+            return redirect(url_for("editar_cocktail", cocktail_id=cocktail_id))
+
+        flash(f"Receita '{nome}' atualizada com sucesso!", "sucesso")
+        return redirect(url_for("visualizar_cocktails"))
+
+    ings_with_names = []
+    for ing in cock.get("ingredientes", []):
+        ings_with_names.append({
+            "produto_id": ing["produto_id"],
+            "quantidade_ml": ing["quantidade_ml"],
+        })
+
+    return render_template(
+        "editar_cocktail.html",
+        cocktail=cock,
+        produtos=produtos,
+        form={
+            "nome": cock["nome"],
+            "tacaria": cock["tacaria"],
+            "receita": cock["receita"],
+        },
+        ingredientes_form=ings_with_names,
         ativo="receitas",
     )
 

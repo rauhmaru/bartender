@@ -35,11 +35,14 @@
         <div class="cocktail-name">{{ c.nome }}</div>
         <div class="cocktail-id">ID {{ "%05d"|format(c.id) }}</div>
       </div>
-      <form class="form-inline" method="post"
-            action="{{ url_for('remover_cocktail_route', cocktail_id=c.id) }}"
-            onsubmit="return confirm('Remover esta receita?');">
-        <button type="submit" class="btn btn-danger btn-sm">Remover</button>
-      </form>
+      <div style="display: flex; gap: 6px;">
+        <a href="{{ url_for('editar_cocktail', cocktail_id=c.id) }}" class="btn btn-gold btn-sm">Editar</a>
+        <form class="form-inline" method="post"
+              action="{{ url_for('remover_cocktail_route', cocktail_id=c.id) }}"
+              onsubmit="return confirm('Remover esta receita?');">
+          <button type="submit" class="btn btn-danger btn-sm">Remover</button>
+        </form>
+      </div>
     </div>
     <div class="cocktail-meta"><strong>Tacaria:</strong> {{ c.tacaria }}</div>
     <div class="cocktail-meta" style="margin-bottom: 4px;"><strong>Ingredientes:</strong></div>

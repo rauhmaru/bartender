@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<div class="card">
+  <h2>Editar Coquetel</h2>
+
+  {% if produtos %}
+  <form method="post" action="{{ url_for('editar_cocktail', cocktail_id=cocktail.id) }}" novalidate>
+    <div class="campo">
+      <label for="id">ID</label>
+      <input type="text" id="id" value="{{ "%05d"|format(cocktail.id) }}" readonly>
+    </div>
+
+    <div class="campo">
+      <label for="nome">Nome do coquetel</label>
+      <input type="text" id="nome" name="nome" maxlength="{{ MAX_NOME }}" required
+             value="{{ form.nome }}" placeholder="Ex.: Mojito">
+    </div>
+
+    <div class="campo">
+      <label>Ingredientes</label>
+      <div id="ingredientes">
+        {% for ing in ingredientes_form %}
+        <div class="ingrediente-linha">
+          <select name="produto_id" required>
+            <option value="">-- selecione um produto --</option>
+            {% for p in produtos %}
+            <option value="{{ p.id }}" {{ 'selected' if p.id == ing.produto_id else '' }}>{{ p.produto }} ({{ p.tipo }})</option>
+            {% endfor %}
+          </select>
+          <input type="number" name="quantidade" step="any" min="0"
+                 placeholder="ml" required value="{{ "%g"|format(ing.quantidade_ml) if ing.quantidade_ml is number else ing.quantidade_ml }}">
+          <button type="button" class="btn-remover-ing" title="Remover" onclick="removerLinha(this)">&times;</button>
+        </div>
+        {% endfor %}
+      </div>
+      <button type="button" class="btn btn-sm btn-secondary btn-add-ing" onclick="adicionarLinha()">+ Adicionar ingrediente</button>
+    </div>
+
+    <div class="campo">
+      <label for="tacaria">Tacaria</label>
+      <input type="text" id="tacaria" name="tacaria" maxlength="{{ MAX_TACARIA }}" required
+             value="{{ form.tacaria }}" placeholder="Ex.: Copo highball">
+    </div>
+
+    <div class="campo">
+      <label for="receita">Receita (modo de preparo)</label>
+      <textarea id="receita" name="receita" required
+                placeholder="Descreva como preparar o drink...">{{ form.receita }}</textarea>
+    </div>
+
+    <div class="acoes">
+      <a class="btn btn-secondary" href="{{ url_for('visualizar_cocktails') }}">Cancelar</a>
+      <button type="submit" class="btn btn-primary">Salvar</button>
+    </div>
+  </form>
+  {% else %}
+  <p class="vazio" style="text-align: left;">
+    Nenhum produto cadastrado. Cadastre produtos antes de editar um coquetel.
+  </p>
+  <div class="acoes">
+    <a class="btn btn-primary" href="{{ url_for('cadastrar') }}">Cadastrar produto</a>
+  </div>
+  {% endif %}
+</div>
+
+<template id="modelo-ingrediente">
+  <div class="ingrediente-linha">
+    <select name="produto_id" required>
+      <option value="">-- selecione um produto --</option>
+      {% for p in produtos %}
+      <option value="{{ p.id }}">{{ p.produto }} ({{ p.tipo }})</option>
+      {% endfor %}
+    </select>
+    <input type="number" name="quantidade" step="any" min="0"
+           placeholder="ml" required>
+    <button type="button" class="btn-remover-ing" title="Remover" onclick="removerLinha(this)">&times;</button>
+  </div>
+</template>
+
+<script>
+  function adicionarLinha() {
+    var modelo = document.getElementById('modelo-ingrediente');
+    var clone = modelo.content.cloneNode(true);
+    document.getElementById('ingredientes').appendChild(clone);
+  }
+  function removerLinha(btn) {
+    var linhas = document.querySelectorAll('#ingredientes .ingrediente-linha');
+    if (linhas.length > 1) {
+      btn.closest('.ingrediente-linha').remove();
+    } else {
+      var linha = btn.closest('.ingrediente-linha');
+      linha.querySelector('select').value = '';
+      linha.querySelector('input').value = '';
+    }
+  }
+</script>
+{% endblock %}
