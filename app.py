@@ -261,26 +261,33 @@ def listar_cocktails():
     cocktails = db.execute(
         "SELECT id, nome, tacaria, receita FROM cocktails ORDER BY id"
     ).fetchall()
+
+    todos_ingredientes = db.execute(
+        """
+        SELECT ci.cocktail_id, p.id AS produto_id, p.produto AS produto,
+               ci.quantidade_ml AS quantidade_ml
+        FROM cocktail_ingredientes ci
+        JOIN produtos p ON p.id = ci.produto_id
+        ORDER BY ci.id
+        """
+    ).fetchall()
+
+    ingredientes_por_cocktail = {}
+    for ing in todos_ingredientes:
+        cid = ing["cocktail_id"]
+        if cid not in ingredientes_por_cocktail:
+            ingredientes_por_cocktail[cid] = []
+        ingredientes_por_cocktail[cid].append(ing)
+
     resultado = []
     for c in cocktails:
-        ingredientes = db.execute(
-            """
-            SELECT p.id AS produto_id, p.produto AS produto,
-                   ci.quantidade_ml AS quantidade_ml
-            FROM cocktail_ingredientes ci
-            JOIN produtos p ON p.id = ci.produto_id
-            WHERE ci.cocktail_id = ?
-            ORDER BY ci.id
-            """,
-            (c["id"],),
-        ).fetchall()
         resultado.append(
             {
                 "id": c["id"],
                 "nome": c["nome"],
                 "tacaria": c["tacaria"],
                 "receita": c["receita"],
-                "ingredientes": ingredientes,
+                "ingredientes": ingredientes_por_cocktail.get(c["id"], []),
             }
         )
     return resultado
