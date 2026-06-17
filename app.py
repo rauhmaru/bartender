@@ -582,7 +582,7 @@ def main():
     """Ponto de entrada: inicializa o banco e sobe o servidor."""
     init_db()
     host = os.environ.get("HOST", "127.0.0.1")
-    port = int(os.environ.get("PORT", "5000"))
+    port = int(os.environ.get("PORT", "80"))
     app.run(host=host, port=port, debug=False)
 
 
