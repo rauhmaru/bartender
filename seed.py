@@ -18,10 +18,8 @@ O script é seguro para rodar mais de uma vez:
 
 from app import (
     app,
+    get_db,
     init_db,
-    inserir_cocktail,
-    inserir_produto,
-    inserir_tipo,
     listar_cocktails,
     listar_produtos,
     listar_tipos,
@@ -332,34 +330,67 @@ def run():
     """Insere produtos e cocktails de forma idempotente."""
     init_db()
     with app.app_context():
+        db = get_db()
         existentes = {p["produto"]: p["id"] for p in listar_produtos()}
 
-        novos_produtos = 0
+        novos_produtos = []
+        produtos_para_inserir = set()
         for nome, tipo, volume in PRODUTOS:
-            if nome not in existentes:
-                existentes[nome] = inserir_produto(nome, tipo, volume)
-                novos_produtos += 1
+            if nome not in existentes and nome not in produtos_para_inserir:
+                novos_produtos.append((nome, tipo, volume))
+                produtos_para_inserir.add(nome)
+
+        if novos_produtos:
+            db.executemany(
+                "INSERT INTO produtos (produto, tipo, volume_ml) VALUES (?, ?, ?)",
+                novos_produtos
+            )
+            db.commit()
+            existentes = {p["produto"]: p["id"] for p in listar_produtos()}
 
         tipos_existentes = {t["nome"] for t in listar_tipos()}
-        novos_tipos = 0
+        novos_tipos = []
+        tipos_para_inserir = set()
         for _, tipo, _ in PRODUTOS:
-            if tipo and tipo not in tipos_existentes:
-                inserir_tipo(tipo)
+            if tipo and tipo not in tipos_existentes and tipo not in tipos_para_inserir:
+                novos_tipos.append((tipo,))
                 tipos_existentes.add(tipo)
-                novos_tipos += 1
+                tipos_para_inserir.add(tipo)
+
+        if novos_tipos:
+            db.executemany("INSERT INTO tipos (nome) VALUES (?)", novos_tipos)
+            db.commit()
 
         nomes_cocktails = {c["nome"] for c in listar_cocktails()}
-        novos_cocktails = 0
-        for nome, tacaria, receita, ingredientes in COCKTAILS:
-            if nome in nomes_cocktails:
-                continue
-            ings = [(existentes[prod], qtd) for prod, qtd in ingredientes]
-            inserir_cocktail(nome, tacaria, receita, ings)
-            novos_cocktails += 1
+        novos_cocktails_count = 0
 
-        print(f"Produtos novos inseridos: {novos_produtos}")
-        print(f"Tipos novos inseridos: {novos_tipos}")
-        print(f"Cocktails novos inseridos: {novos_cocktails}")
+        try:
+            for nome, tacaria, receita, ingredientes in COCKTAILS:
+                if nome in nomes_cocktails:
+                    continue
+
+                cur = db.execute(
+                    "INSERT INTO cocktails (nome, tacaria, receita) VALUES (?, ?, ?)",
+                    (nome, tacaria, receita)
+                )
+                cocktail_id = cur.lastrowid
+                ings = [(cocktail_id, existentes[prod], qtd) for prod, qtd in ingredientes]
+                db.executemany(
+                    "INSERT INTO cocktail_ingredientes (cocktail_id, produto_id, quantidade_ml) "
+                    "VALUES (?, ?, ?)",
+                    ings
+                )
+                novos_cocktails_count += 1
+
+            if novos_cocktails_count > 0:
+                db.commit()
+        except Exception:
+            db.rollback()
+            raise
+
+        print(f"Produtos novos inseridos: {len(novos_produtos)}")
+        print(f"Tipos novos inseridos: {len(novos_tipos)}")
+        print(f"Cocktails novos inseridos: {novos_cocktails_count}")
         print(f"Total de produtos: {len(listar_produtos())}")
         print(f"Total de cocktails: {len(listar_cocktails())}")
 
