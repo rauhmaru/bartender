@@ -6,11 +6,6 @@
   {% if produtos %}
   <form method="post" action="{{ url_for('editar_cocktail', cocktail_id=cocktail.id) }}" novalidate>
     <div class="campo">
-      <label for="id">ID</label>
-      <input type="text" id="id" value="{{ "%05d"|format(cocktail.id) }}" readonly>
-    </div>
-
-    <div class="campo">
       <label for="nome">Nome do coquetel</label>
       <input type="text" id="nome" name="nome" maxlength="{{ MAX_NOME }}" required
              value="{{ form.nome }}" placeholder="Ex.: Mojito">

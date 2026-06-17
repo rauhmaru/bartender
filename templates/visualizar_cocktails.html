@@ -33,7 +33,7 @@
     <div class="cocktail-header">
       <div>
         <div class="cocktail-name">{{ c.nome }}</div>
-        <div class="cocktail-id">ID {{ "%05d"|format(c.id) }}</div>
+        
       </div>
       <div style="display: flex; gap: 6px;">
         <a href="{{ url_for('editar_cocktail', cocktail_id=c.id) }}" class="btn btn-gold btn-sm">Editar</a>

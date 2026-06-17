@@ -11,7 +11,7 @@
     <div class="inv-icon">&#127866;</div>
     <div class="inv-info">
       <div class="inv-name">{{ p.produto }}</div>
-      <div class="inv-detail">{{ p.tipo }} &bull; {{ p.volume_ml }}ml &bull; ID {{ "%05d"|format(p.id) }}</div>
+      <div class="inv-detail">{{ p.tipo }} &bull; {{ p.volume_ml }}ml</div>
     </div>
     <div class="inv-actions" style="display: flex; gap: 6px;">
       <a href="{{ url_for('editar_produto', produto_id=p.id) }}" class="btn btn-gold btn-sm">Editar</a>

@@ -180,6 +180,26 @@ def remover_cocktail(cocktail_id):
     cocktails_table.remove(Cocktail.id == cocktail_id)
 
 
+def obter_tipo(tipo_id):
+    """Retorna um tipo pelo ID ou None."""
+    results = tipos_table.search(Tipo.id == tipo_id)
+    return results[0] if results else None
+
+
+def atualizar_tipo(tipo_id, nome):
+    """Atualiza o nome de um tipo e propaga para os produtos que o usam."""
+    old = obter_tipo(tipo_id)
+    if not old:
+        raise ValueError("Tipo nao encontrado.")
+    old_nome = old["nome"]
+    existing = tipos_table.search((Tipo.nome == nome) & (Tipo.id != tipo_id))
+    if existing:
+        raise ValueError(f"O tipo '{nome}' ja esta cadastrado.")
+    tipos_table.update({"nome": nome}, Tipo.id == tipo_id)
+    if old_nome != nome:
+        produtos_table.update({"tipo": nome}, Produto.tipo == old_nome)
+
+
 def remover_tipo(tipo_id):
     """Remove um tipo pelo ID."""
     tipos_table.remove(Tipo.id == tipo_id)
@@ -363,6 +383,60 @@ def remover_tipo_route(tipo_id):
 
     flash("Tipo de produto removido com sucesso.", "sucesso")
     return redirect(url_for("cadastrar_tipo"))
+
+
+@app.route("/tipos/<int:tipo_id>/editar", methods=["GET", "POST"])
+def editar_tipo(tipo_id):
+    """Tela de edicao de tipo de produto."""
+    tipo_obj = obter_tipo(tipo_id)
+    if not tipo_obj:
+        flash("Tipo nao encontrado.", "erro")
+        return redirect(url_for("cadastrar_tipo"))
+
+    if request.method == "POST":
+        nome = (request.form.get("nome") or "").strip()
+        if not nome:
+            flash("O campo 'Tipo de produto' e obrigatorio.", "erro")
+            return render_template(
+                "editar_tipo.html",
+                tipo_obj=tipo_obj,
+                form={"nome": nome},
+                ativo="tipos",
+            )
+        if len(nome) > MAX_TIPO:
+            flash(
+                f"'Tipo de produto' deve ter no maximo {MAX_TIPO} caracteres.",
+                "erro",
+            )
+            return render_template(
+                "editar_tipo.html",
+                tipo_obj=tipo_obj,
+                form={"nome": nome},
+                ativo="tipos",
+            )
+        try:
+            atualizar_tipo(tipo_id, nome)
+        except ValueError as exc:
+            flash(str(exc), "erro")
+            return render_template(
+                "editar_tipo.html",
+                tipo_obj=tipo_obj,
+                form={"nome": nome},
+                ativo="tipos",
+            )
+        except Exception as exc:
+            flash(f"Erro ao salvar no banco: {exc}", "erro")
+            return redirect(url_for("editar_tipo", tipo_id=tipo_id))
+
+        flash(f"Tipo de produto atualizado com sucesso!", "sucesso")
+        return redirect(url_for("cadastrar_tipo"))
+
+    return render_template(
+        "editar_tipo.html",
+        tipo_obj=tipo_obj,
+        form={"nome": tipo_obj["nome"]},
+        ativo="tipos",
+    )
 
 
 @app.route("/visualizar")

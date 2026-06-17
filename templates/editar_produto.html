@@ -4,10 +4,6 @@
   <h2>Editar Produto</h2>
   <form method="post" action="{{ url_for('editar_produto', produto_id=produto_obj.id) }}" novalidate>
     <div class="campo">
-      <label for="id">ID</label>
-      <input type="text" id="id" name="id" value="{{ "%05d"|format(produto_obj.id) }}" readonly>
-    </div>
-    <div class="campo">
       <label for="produto">Produto</label>
       <input type="text" id="produto" name="produto"
              maxlength="{{ MAX_PRODUTO }}" required

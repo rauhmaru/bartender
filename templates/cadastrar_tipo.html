@@ -23,9 +23,10 @@
       <div class="inv-icon">&#128218;</div>
       <div class="inv-info">
         <div class="inv-name">{{ t.nome }}</div>
-        <div class="inv-detail">ID {{ "%05d"|format(t.id) }}</div>
+        
       </div>
-      <div class="inv-actions">
+      <div class="inv-actions" style="display: flex; gap: 6px;">
+        <a href="{{ url_for('editar_tipo', tipo_id=t.id) }}" class="btn btn-gold btn-sm">Editar</a>
         <form class="form-inline" method="post"
               action="{{ url_for('remover_tipo_route', tipo_id=t.id) }}"
               onsubmit="return confirm('Remover este tipo de produto?');">
