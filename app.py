@@ -39,6 +39,7 @@ Variáveis de ambiente opcionais:
 """
 
 import os
+import secrets
 
 from flask import (
     Flask,
@@ -63,7 +64,8 @@ MAX_TACARIA = 40
 MAX_QUANTIDADE = 99999.0
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "sgdc-dev-key")
+# SECURITY: Use a secure random token if SECRET_KEY is not provided
+app.secret_key = os.environ.get("SECRET_KEY", secrets.token_hex(32))
 
 # TinyDB instance
 db = TinyDB(DB_PATH, indent=2)
@@ -318,7 +320,8 @@ def cadastrar():
         try:
             novo_id = inserir_produto(produto, tipo, int(volume_txt))
         except Exception as exc:
-            flash(f"Erro ao salvar no banco: {exc}", "erro")
+            app.logger.error(f"Erro ao salvar produto no banco: {exc}")
+            flash("Ocorreu um erro interno ao salvar o produto.", "erro")
             return redirect(url_for("cadastrar"))
 
         flash(f"Produto cadastrado com sucesso! ID: {novo_id:05d}", "sucesso")
@@ -353,7 +356,8 @@ def cadastrar_tipo():
             flash(str(exc), "erro")
             return redirect(url_for("cadastrar_tipo"))
         except Exception as exc:
-            flash(f"Erro ao salvar no banco: {exc}", "erro")
+            app.logger.error(f"Erro ao salvar tipo no banco: {exc}")
+            flash("Ocorreu um erro interno ao salvar o tipo.", "erro")
             return redirect(url_for("cadastrar_tipo"))
 
         flash(f"Tipo de produto '{nome}' cadastrado com sucesso!", "sucesso")
@@ -378,7 +382,8 @@ def remover_tipo_route(tipo_id):
     try:
         remover_tipo(tipo_id)
     except Exception as exc:
-        flash(f"Erro ao remover: {exc}", "erro")
+        app.logger.error(f"Erro ao remover tipo: {exc}")
+        flash("Ocorreu um erro interno ao remover o tipo.", "erro")
         return redirect(url_for("cadastrar_tipo"))
 
     flash("Tipo de produto removido com sucesso.", "sucesso")
@@ -425,7 +430,8 @@ def editar_tipo(tipo_id):
                 ativo="tipos",
             )
         except Exception as exc:
-            flash(f"Erro ao salvar no banco: {exc}", "erro")
+            app.logger.error(f"Erro ao editar tipo no banco: {exc}")
+            flash("Ocorreu um erro interno ao atualizar o tipo.", "erro")
             return redirect(url_for("editar_tipo", tipo_id=tipo_id))
 
         flash(f"Tipo de produto atualizado com sucesso!", "sucesso")
@@ -476,7 +482,8 @@ def editar_produto(produto_id):
         try:
             atualizar_produto(produto_id, produto, tipo, int(volume_txt))
         except Exception as exc:
-            flash(f"Erro ao salvar no banco: {exc}", "erro")
+            app.logger.error(f"Erro ao atualizar produto no banco: {exc}")
+            flash("Ocorreu um erro interno ao atualizar o produto.", "erro")
             return redirect(url_for("editar_produto", produto_id=produto_id))
 
         flash(f"Produto atualizado com sucesso! ID: {produto_id:05d}", "sucesso")
@@ -504,7 +511,8 @@ def remover_produto_route(produto_id):
         flash(str(exc), "erro")
         return redirect(url_for("visualizar"))
     except Exception as exc:
-        flash(f"Erro ao remover: {exc}", "erro")
+        app.logger.error(f"Erro ao remover produto: {exc}")
+        flash("Ocorreu um erro interno ao remover o produto.", "erro")
         return redirect(url_for("visualizar"))
 
     flash("Produto removido com sucesso.", "sucesso")
@@ -538,7 +546,8 @@ def adicionar_cocktail():
         try:
             novo_id = inserir_cocktail(nome, tacaria, receita, ingredientes)
         except Exception as exc:
-            flash(f"Erro ao salvar no banco: {exc}", "erro")
+            app.logger.error(f"Erro ao salvar cocktail no banco: {exc}")
+            flash("Ocorreu um erro interno ao salvar o coquetel.", "erro")
             return redirect(url_for("adicionar_cocktail"))
 
         flash(f"Coquetel '{nome}' adicionado com sucesso!", "sucesso")
@@ -621,7 +630,8 @@ def editar_cocktail(cocktail_id):
         try:
             atualizar_cocktail(cocktail_id, nome, tacaria, receita, ingredientes)
         except Exception as exc:
-            flash(f"Erro ao salvar no banco: {exc}", "erro")
+            app.logger.error(f"Erro ao atualizar cocktail no banco: {exc}")
+            flash("Ocorreu um erro interno ao atualizar a receita.", "erro")
             return redirect(url_for("editar_cocktail", cocktail_id=cocktail_id))
 
         flash(f"Receita '{nome}' atualizada com sucesso!", "sucesso")
@@ -654,7 +664,8 @@ def remover_cocktail_route(cocktail_id):
     try:
         remover_cocktail(cocktail_id)
     except Exception as exc:
-        flash(f"Erro ao remover: {exc}", "erro")
+        app.logger.error(f"Erro ao remover cocktail: {exc}")
+        flash("Ocorreu um erro interno ao remover a receita.", "erro")
         return redirect(url_for("visualizar_cocktails"))
 
     flash("Receita removida com sucesso.", "sucesso")
