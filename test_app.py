@@ -1,3 +1,95 @@
+import pytest
+from app import _validar_cocktail, MAX_NOME, MAX_TACARIA, MAX_QUANTIDADE
+
+@pytest.fixture
+def base_produtos():
+    return [
+        {"id": 1, "produto": "Gin"},
+        {"id": 2, "produto": "Tônica"},
+        {"id": 3, "produto": "Limão"}
+    ]
+
+def test_validar_cocktail_happy_path(base_produtos):
+    nome = "Gin Tônica"
+    tacaria = "Taça de Gin"
+    receita = "Misturar tudo com gelo"
+    produto_ids = ["1", "2"]
+    quantidades = ["50", "150.5"]
+
+    error, ingredientes = _validar_cocktail(nome, tacaria, receita, produto_ids, quantidades, base_produtos)
+
+    assert error is None
+    assert ingredientes == [(1, 50.0), (2, 150.5)]
+
+def test_validar_cocktail_empty_fields(base_produtos):
+    # Empty nome
+    error, _ = _validar_cocktail("", "Taça", "Receita", ["1"], ["50"], base_produtos)
+    assert error == "O campo 'Nome do coquetel' é obrigatório."
+
+    # Empty tacaria
+    error, _ = _validar_cocktail("Nome", "", "Receita", ["1"], ["50"], base_produtos)
+    assert error == "O campo 'Taçaria' é obrigatório."
+
+    # Empty receita
+    error, _ = _validar_cocktail("Nome", "Taça", "", ["1"], ["50"], base_produtos)
+    assert error == "O campo 'Receita' é obrigatório."
+
+def test_validar_cocktail_exceed_limits(base_produtos):
+    # Exceed nome length
+    long_nome = "A" * (MAX_NOME + 1)
+    error, _ = _validar_cocktail(long_nome, "Taça", "Receita", ["1"], ["50"], base_produtos)
+    assert error == f"'Nome do coquetel' deve ter no máximo {MAX_NOME} caracteres."
+
+    # Exceed tacaria length
+    long_tacaria = "A" * (MAX_TACARIA + 1)
+    error, _ = _validar_cocktail("Nome", long_tacaria, "Receita", ["1"], ["50"], base_produtos)
+    assert error == f"'Taçaria' deve ter no máximo {MAX_TACARIA} caracteres."
+
+def test_validar_cocktail_ingredients(base_produtos):
+    # Empty pairs being skipped
+    error, ingredientes = _validar_cocktail("Nome", "Taça", "Receita", ["", "1"], ["", "50"], base_produtos)
+    assert error is None
+    assert ingredientes == [(1, 50.0)]
+
+    # Missing product ID
+    error, _ = _validar_cocktail("Nome", "Taça", "Receita", ["", "1"], ["50", "50"], base_produtos)
+    assert error == "Selecione o produto de todos os ingredientes."
+
+    # Invalid product ID string
+    error, _ = _validar_cocktail("Nome", "Taça", "Receita", ["abc"], ["50"], base_produtos)
+    assert error == "Ingrediente inválido."
+
+    # Product ID not in produtos
+    error, _ = _validar_cocktail("Nome", "Taça", "Receita", ["99"], ["50"], base_produtos)
+    assert error == "Ingrediente inválido: produto não cadastrado."
+
+    # Missing quantity
+    error, _ = _validar_cocktail("Nome", "Taça", "Receita", ["1"], [""], base_produtos)
+    assert error == "Informe a quantidade (ml) de cada ingrediente."
+
+    # Invalid quantity string
+    error, _ = _validar_cocktail("Nome", "Taça", "Receita", ["1"], ["abc"], base_produtos)
+    assert error == "'Quantidade' deve ser um número (ml)."
+
+    # Quantity <= 0
+    error, _ = _validar_cocktail("Nome", "Taça", "Receita", ["1"], ["0"], base_produtos)
+    assert error == f"'Quantidade' deve ser maior que 0 e ate {int(MAX_QUANTIDADE)}."
+
+    error, _ = _validar_cocktail("Nome", "Taça", "Receita", ["1"], ["-50"], base_produtos)
+    assert error == f"'Quantidade' deve ser maior que 0 e ate {int(MAX_QUANTIDADE)}."
+
+    # Quantity > MAX_QUANTIDADE
+    error, _ = _validar_cocktail("Nome", "Taça", "Receita", ["1"], [str(MAX_QUANTIDADE + 1)], base_produtos)
+    assert error == f"'Quantidade' deve ser maior que 0 e ate {int(MAX_QUANTIDADE)}."
+
+    # Empty ingredients overall
+    error, _ = _validar_cocktail("Nome", "Taça", "Receita", ["", ""], ["", ""], base_produtos)
+    assert error == "Adicione pelo menos um ingrediente."
+
+    # Handle comma decimals
+    error, ingredientes = _validar_cocktail("Nome", "Taça", "Receita", ["1"], ["50,5"], base_produtos)
+    assert error is None
+    assert ingredientes == [(1, 50.5)]
 from app import contar_coqueteis_possiveis
 
 def test_contar_coqueteis_possiveis_empty_lists():
