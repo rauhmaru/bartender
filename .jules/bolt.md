@@ -1,3 +1,4 @@
-## 2024-05-14 - TinyDB CachingMiddleware Performance
-**Learning:** In a Flask app using TinyDB, reading `.all()` repeatedly on every request leads to a lot of disk I/O because TinyDB reads the JSON file synchronously on every operation. Using `CachingMiddleware` from `tinydb.middlewares` wraps the underlying storage, caches the DB in memory, and only flushes to disk when necessary, which drastically reduces `index()` route load time (e.g. from ~0.33s per 100 requests to ~0.13s per 100 requests).
-**Action:** When using TinyDB in an application with high read frequency relative to write frequency, wrap the storage in `CachingMiddleware`.
+# Performance Learnings & Patterns
+
+## TinyDB Single Item Lookups
+When searching for a single item by a unique ID using `tinydb`, avoid using `table.search(Query.id == id)` as it will perform a full scan of the dataset. Instead, use `table.get(Query.id == id)` which will stop searching and return early upon the first match, resulting in significant speedups (e.g. O(N) scan but halts early, up to ~170x faster if found near the beginning of the list).

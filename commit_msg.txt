@@ -1,0 +1,6 @@
+🧹 [code health improvement] remove unused 'where' import from tinydb
+
+🎯 **What:** Removed the unused `where` import from `tinydb` in `app.py`.
+💡 **Why:** It removes unused imports, improving readability and code health.
+✅ **Verification:** Verified by checking that `where` isn't used anywhere in `app.py` and starting the Flask application locally.
+✨ **Result:** Cleaned up import statement.

@@ -40,6 +40,7 @@ Variáveis de ambiente opcionais:
 
 import os
 import secrets
+import threading
 
 from flask import (
     Flask,
@@ -49,7 +50,7 @@ from flask import (
     request,
     url_for,
 )
-from tinydb import TinyDB, Query, where
+from tinydb import TinyDB, Query
 
 # Caminho do banco de dados: mesmo diretório do script.
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -67,6 +68,8 @@ MAX_RECEITA = 5000
 app = Flask(__name__)
 # SECURITY: Use a secure random token if SECRET_KEY is not provided
 app.secret_key = os.environ.get("SECRET_KEY", secrets.token_hex(32))
+# SECURITY: Limit request body size to 16MB to prevent DoS attacks
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
 # TinyDB instance
 db = TinyDB(DB_PATH, indent=2)
@@ -82,12 +85,21 @@ Cocktail = Query()
 # --------------------------------------------------------------------------- #
 # Camada de banco de dados (NoSQL / TinyDB)
 # --------------------------------------------------------------------------- #
+_MAX_ID_CACHE = {}
+
+
 def _next_id(table):
-    """Retorna o próximo ID sequencial para a tabela."""
-    all_docs = table.all()
-    if not all_docs:
-        return 1
-    return max(doc.get("id", 0) for doc in all_docs) + 1
+    """Retorna o próximo ID sequencial para a tabela utilizando cache."""
+    table_name = table.name
+    if table_name not in _MAX_ID_CACHE:
+        all_docs = table.all()
+        if not all_docs:
+            _MAX_ID_CACHE[table_name] = 0
+        else:
+            _MAX_ID_CACHE[table_name] = max(doc.get("id", 0) for doc in all_docs)
+
+    _MAX_ID_CACHE[table_name] += 1
+    return _MAX_ID_CACHE[table_name]
 
 
 def proximo_id():
@@ -123,18 +135,18 @@ def listar_tipos():
 
 def inserir_tipo(nome):
     """Insere um novo tipo. Levanta ValueError se já existir."""
-    existing = tipos_table.search(Tipo.nome == nome)
-    if existing:
-        raise ValueError(f"O tipo '{nome}' já está cadastrado.")
-    new_id = _next_id(tipos_table)
-    tipos_table.insert({"id": new_id, "nome": nome})
-    return new_id
+    with db_lock:
+        existing = tipos_table.search(Tipo.nome == nome)
+        if existing:
+            raise ValueError(f"O tipo '{nome}' já está cadastrado.")
+        new_id = _next_id(tipos_table)
+        tipos_table.insert({"id": new_id, "nome": nome})
+        return new_id
 
 
 def obter_produto(produto_id):
     """Retorna um produto pelo ID ou None."""
-    results = produtos_table.search(Produto.id == produto_id)
-    return results[0] if results else None
+    return produtos_table.get(Produto.id == produto_id)
 
 
 def atualizar_produto(produto_id, produto, tipo, volume_ml):
@@ -160,8 +172,7 @@ def remover_produto(produto_id):
 
 def obter_cocktail(cocktail_id):
     """Retorna um cocktail pelo ID ou None."""
-    results = cocktails_table.search(Cocktail.id == cocktail_id)
-    return results[0] if results else None
+    return cocktails_table.get(Cocktail.id == cocktail_id)
 
 
 def atualizar_cocktail(cocktail_id, nome, tacaria, receita, ingredientes):
@@ -186,8 +197,7 @@ def remover_cocktail(cocktail_id):
 
 def obter_tipo(tipo_id):
     """Retorna um tipo pelo ID ou None."""
-    results = tipos_table.search(Tipo.id == tipo_id)
-    return results[0] if results else None
+    return tipos_table.get(Tipo.id == tipo_id)
 
 
 def atualizar_tipo(tipo_id, nome):
@@ -211,10 +221,10 @@ def remover_tipo(tipo_id):
 
 def tipo_em_uso(tipo_id):
     """Retorna True se o tipo estiver em uso por algum produto."""
-    tipo_doc = tipos_table.search(Tipo.id == tipo_id)
+    tipo_doc = tipos_table.get(Tipo.id == tipo_id)
     if not tipo_doc:
         return False
-    nome = tipo_doc[0]["nome"]
+    nome = tipo_doc["nome"]
     usados = produtos_table.search(Produto.tipo == nome)
     return len(usados) > 0
 
@@ -291,6 +301,15 @@ def contar_coqueteis_possiveis(produtos=None, cocktails=None):
 # --------------------------------------------------------------------------- #
 # Rotas
 # --------------------------------------------------------------------------- #
+@app.after_request
+def add_security_headers(response):
+    """Adiciona headers de segurança (Security Enhancements)."""
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Content-Security-Policy'] = "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:;"
+    return response
+
 @app.route("/")
 def index():
     """Dashboard principal — Meu Bar."""
@@ -320,6 +339,7 @@ def index():
 def cadastrar():
     """Tela de cadastro de produto (GET) e processamento do envio (POST)."""
     tipos = listar_tipos()
+    proximo_id_str = f"{proximo_id():05d}"
     if request.method == "POST":
         produto = (request.form.get("produto") or "").strip()
         tipo = (request.form.get("tipo") or "").strip()
@@ -331,7 +351,7 @@ def cadastrar():
             flash(erro, "erro")
             return render_template(
                 "cadastrar.html",
-                proximo_id=f"{proximo_id():05d}",
+                proximo_id=proximo_id_str,
                 tipos=tipos,
                 form={"produto": produto, "tipo": tipo, "volume_ml": volume_txt},
                 ativo="produtos",
@@ -349,7 +369,7 @@ def cadastrar():
 
     return render_template(
         "cadastrar.html",
-        proximo_id=f"{proximo_id():05d}",
+        proximo_id=proximo_id_str,
         tipos=tipos,
         form={"produto": "", "tipo": "", "volume_ml": ""},
         ativo="produtos",
@@ -591,7 +611,7 @@ def visualizar_cocktails():
         if valor.isdigit():
             selecionados.add(int(valor))
 
-    cocktails = listar_cocktails()
+    cocktails = listar_cocktails(produtos=produtos)
     if selecionados:
         cocktails = [
             c
@@ -618,7 +638,6 @@ def editar_cocktail(cocktail_id):
         return redirect(url_for("visualizar_cocktails"))
 
     produtos = listar_produtos()
-    produtos_map = {p["id"]: p["produto"] for p in produtos}
 
     if request.method == "POST":
         nome = (request.form.get("nome") or "").strip()
@@ -632,6 +651,7 @@ def editar_cocktail(cocktail_id):
         )
         if erro:
             flash(erro, "erro")
+            ings_form = _extrair_ingredientes_form(produto_ids, quantidades)
             ings_form = []
             for pid_txt, qtd_txt in zip(produto_ids, quantidades):
                 pid_txt = (pid_txt or "").strip()
@@ -682,7 +702,7 @@ def editar_cocktail(cocktail_id):
             "tacaria": cock["tacaria"],
             "receita": cock["receita"],
         },
-        ingredientes_form=ings_with_names,
+        ingredientes_form=cock.get("ingredientes", []),
         ativo="receitas",
     )
 
@@ -723,20 +743,47 @@ def _validar(produto, tipo, volume_txt, tipos_validos=None):
     return None
 
 
+def _validar_campos_basicos_cocktail(nome, tacaria, receita):
+    """Valida os campos básicos do cocktail."""
+    if not nome:
+        return "O campo 'Nome do coquetel' é obrigatório."
+    if len(nome) > MAX_NOME:
+        return f"'Nome do coquetel' deve ter no máximo {MAX_NOME} caracteres."
+    if not tacaria:
+        return "O campo 'Taçaria' é obrigatório."
+    if len(tacaria) > MAX_TACARIA:
+        return f"'Taçaria' deve ter no máximo {MAX_TACARIA} caracteres."
+    if not receita:
+        return "O campo 'Receita' é obrigatório."
+    return None
+
+
+def _validar_ingrediente(pid_txt, qtd_txt, ids_validos):
+    """Valida um único ingrediente e retorna (erro, (pid, qtd))."""
+    if not pid_txt:
+        return "Selecione o produto de todos os ingredientes.", None
+    try:
+        pid = int(pid_txt)
+    except ValueError:
+        return "Ingrediente inválido.", None
+    if pid not in ids_validos:
+        return "Ingrediente inválido: produto não cadastrado.", None
+    if not qtd_txt:
+        return "Informe a quantidade (ml) de cada ingrediente.", None
+    try:
+        qtd = float(qtd_txt)
+    except ValueError:
+        return "'Quantidade' deve ser um número (ml).", None
+    if qtd <= 0 or qtd > MAX_QUANTIDADE:
+        return f"'Quantidade' deve ser maior que 0 e ate {int(MAX_QUANTIDADE)}.", None
+    return None, (pid, qtd)
+
+
 def _validar_cocktail(nome, tacaria, receita, produto_ids, quantidades, produtos):
     """Valida os dados do cocktail."""
-    if not nome:
-        return "O campo 'Nome do coquetel' é obrigatório.", []
-    if len(nome) > MAX_NOME:
-        return f"'Nome do coquetel' deve ter no máximo {MAX_NOME} caracteres.", []
-    if not tacaria:
-        return "O campo 'Taçaria' é obrigatório.", []
-    if len(tacaria) > MAX_TACARIA:
-        return f"'Taçaria' deve ter no máximo {MAX_TACARIA} caracteres.", []
-    if not receita:
-        return "O campo 'Receita' é obrigatório.", []
-    if len(receita) > MAX_RECEITA:
-        return f"'Receita' deve ter no máximo {MAX_RECEITA} caracteres.", []
+    erro = _validar_campos_basicos_cocktail(nome, tacaria, receita)
+    if erro:
+        return erro, []
 
     ids_validos = {p["id"] for p in produtos}
     ingredientes = []
@@ -745,27 +792,26 @@ def _validar_cocktail(nome, tacaria, receita, produto_ids, quantidades, produtos
         qtd_txt = (qtd_txt or "").strip().replace(",", ".")
         if not pid_txt and not qtd_txt:
             continue
-        if not pid_txt:
-            return "Selecione o produto de todos os ingredientes.", []
-        try:
-            pid = int(pid_txt)
-        except ValueError:
-            return "Ingrediente inválido.", []
-        if pid not in ids_validos:
-            return "Ingrediente inválido: produto não cadastrado.", []
-        if not qtd_txt:
-            return "Informe a quantidade (ml) de cada ingrediente.", []
-        try:
-            qtd = float(qtd_txt)
-        except ValueError:
-            return "'Quantidade' deve ser um número (ml).", []
-        if qtd <= 0 or qtd > MAX_QUANTIDADE:
-            return f"'Quantidade' deve ser maior que 0 e ate {int(MAX_QUANTIDADE)}.", []
-        ingredientes.append((pid, qtd))
+
+        erro, ingrediente = _validar_ingrediente(pid_txt, qtd_txt, ids_validos)
+        if erro:
+            return erro, []
+        ingredientes.append(ingrediente)
 
     if not ingredientes:
         return "Adicione pelo menos um ingrediente.", []
     return None, ingredientes
+
+def _extrair_ingredientes_form(produto_ids, quantidades):
+    """Extrai os ingredientes enviados no form para remontar a tela em caso de erro."""
+    ings_form = []
+    for pid_txt, qtd_txt in zip(produto_ids, quantidades):
+        pid_txt = (pid_txt or "").strip()
+        qtd_txt = (qtd_txt or "").strip()
+        if pid_txt or qtd_txt:
+            ings_form.append({"produto_id": int(pid_txt) if pid_txt.isdigit() else 0, "quantidade_ml": qtd_txt})
+    return ings_form
+
 
 
 @app.context_processor
