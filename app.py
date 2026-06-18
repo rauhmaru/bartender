@@ -218,8 +218,7 @@ def tipo_em_uso(tipo_id):
     if not tipo_doc:
         return False
     nome = tipo_doc[0]["nome"]
-    usados = produtos_table.search(Produto.tipo == nome)
-    return len(usados) > 0
+    return produtos_table.contains(Produto.tipo == nome)
 
 
 def inserir_cocktail(nome, tacaria, receita, ingredientes):
