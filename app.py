@@ -627,7 +627,6 @@ def editar_cocktail(cocktail_id):
         return redirect(url_for("visualizar_cocktails"))
 
     produtos = listar_produtos()
-    produtos_map = {p["id"]: p["produto"] for p in produtos}
 
     if request.method == "POST":
         nome = (request.form.get("nome") or "").strip()
@@ -641,12 +640,7 @@ def editar_cocktail(cocktail_id):
         )
         if erro:
             flash(erro, "erro")
-            ings_form = []
-            for pid_txt, qtd_txt in zip(produto_ids, quantidades):
-                pid_txt = (pid_txt or "").strip()
-                qtd_txt = (qtd_txt or "").strip()
-                if pid_txt or qtd_txt:
-                    ings_form.append({"produto_id": int(pid_txt) if pid_txt.isdigit() else 0, "quantidade_ml": qtd_txt})
+            ings_form = _extrair_ingredientes_form(produto_ids, quantidades)
             return render_template(
                 "editar_cocktail.html",
                 cocktail=cock,
@@ -666,13 +660,6 @@ def editar_cocktail(cocktail_id):
         flash(f"Receita '{nome}' atualizada com sucesso!", "sucesso")
         return redirect(url_for("visualizar_cocktails"))
 
-    ings_with_names = []
-    for ing in cock.get("ingredientes", []):
-        ings_with_names.append({
-            "produto_id": ing["produto_id"],
-            "quantidade_ml": ing["quantidade_ml"],
-        })
-
     return render_template(
         "editar_cocktail.html",
         cocktail=cock,
@@ -682,7 +669,7 @@ def editar_cocktail(cocktail_id):
             "tacaria": cock["tacaria"],
             "receita": cock["receita"],
         },
-        ingredientes_form=ings_with_names,
+        ingredientes_form=cock.get("ingredientes", []),
         ativo="receitas",
     )
 
@@ -781,6 +768,17 @@ def _validar_cocktail(nome, tacaria, receita, produto_ids, quantidades, produtos
     if not ingredientes:
         return "Adicione pelo menos um ingrediente.", []
     return None, ingredientes
+
+def _extrair_ingredientes_form(produto_ids, quantidades):
+    """Extrai os ingredientes enviados no form para remontar a tela em caso de erro."""
+    ings_form = []
+    for pid_txt, qtd_txt in zip(produto_ids, quantidades):
+        pid_txt = (pid_txt or "").strip()
+        qtd_txt = (qtd_txt or "").strip()
+        if pid_txt or qtd_txt:
+            ings_form.append({"produto_id": int(pid_txt) if pid_txt.isdigit() else 0, "quantidade_ml": qtd_txt})
+    return ings_form
+
 
 
 @app.context_processor
