@@ -67,6 +67,8 @@ MAX_QUANTIDADE = 99999.0
 app = Flask(__name__)
 # SECURITY: Use a secure random token if SECRET_KEY is not provided
 app.secret_key = os.environ.get("SECRET_KEY", secrets.token_hex(32))
+# SECURITY: Limit request body size to 16MB to prevent DoS attacks
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
 # TinyDB instance
 db = TinyDB(DB_PATH, indent=2)
@@ -82,14 +84,21 @@ Cocktail = Query()
 # --------------------------------------------------------------------------- #
 # Camada de banco de dados (NoSQL / TinyDB)
 # --------------------------------------------------------------------------- #
-db_lock = threading.Lock()
+_MAX_ID_CACHE = {}
+
 
 def _next_id(table):
-    """Retorna o próximo ID sequencial para a tabela."""
-    all_docs = table.all()
-    if not all_docs:
-        return 1
-    return max(doc.get("id", 0) for doc in all_docs) + 1
+    """Retorna o próximo ID sequencial para a tabela utilizando cache."""
+    table_name = table.name
+    if table_name not in _MAX_ID_CACHE:
+        all_docs = table.all()
+        if not all_docs:
+            _MAX_ID_CACHE[table_name] = 0
+        else:
+            _MAX_ID_CACHE[table_name] = max(doc.get("id", 0) for doc in all_docs)
+
+    _MAX_ID_CACHE[table_name] += 1
+    return _MAX_ID_CACHE[table_name]
 
 
 def proximo_id():
@@ -99,15 +108,16 @@ def proximo_id():
 
 def inserir_produto(produto, tipo, volume_ml):
     """Insere um novo produto e retorna o ID gerado."""
-    with db_lock:
-        new_id = _next_id(produtos_table)
-        produtos_table.insert({
+    new_id = _next_id(produtos_table)
+    produtos_table.insert(
+        {
             "id": new_id,
             "produto": produto,
             "tipo": tipo,
             "volume_ml": volume_ml,
-        })
-        return new_id
+        }
+    )
+    return new_id
 
 
 def listar_produtos():
@@ -135,8 +145,7 @@ def inserir_tipo(nome):
 
 def obter_produto(produto_id):
     """Retorna um produto pelo ID ou None."""
-    results = produtos_table.search(Produto.id == produto_id)
-    return results[0] if results else None
+    return produtos_table.get(Produto.id == produto_id)
 
 
 def atualizar_produto(produto_id, produto, tipo, volume_ml):
@@ -162,8 +171,7 @@ def remover_produto(produto_id):
 
 def obter_cocktail(cocktail_id):
     """Retorna um cocktail pelo ID ou None."""
-    results = cocktails_table.search(Cocktail.id == cocktail_id)
-    return results[0] if results else None
+    return cocktails_table.get(Cocktail.id == cocktail_id)
 
 
 def atualizar_cocktail(cocktail_id, nome, tacaria, receita, ingredientes):
@@ -174,8 +182,7 @@ def atualizar_cocktail(cocktail_id, nome, tacaria, receita, ingredientes):
             "tacaria": tacaria,
             "receita": receita,
             "ingredientes": [
-                {"produto_id": pid, "quantidade_ml": qtd}
-                for pid, qtd in ingredientes
+                {"produto_id": pid, "quantidade_ml": qtd} for pid, qtd in ingredientes
             ],
         },
         Cocktail.id == cocktail_id,
@@ -189,8 +196,7 @@ def remover_cocktail(cocktail_id):
 
 def obter_tipo(tipo_id):
     """Retorna um tipo pelo ID ou None."""
-    results = tipos_table.search(Tipo.id == tipo_id)
-    return results[0] if results else None
+    return tipos_table.get(Tipo.id == tipo_id)
 
 
 def atualizar_tipo(tipo_id, nome):
@@ -214,10 +220,10 @@ def remover_tipo(tipo_id):
 
 def tipo_em_uso(tipo_id):
     """Retorna True se o tipo estiver em uso por algum produto."""
-    tipo_doc = tipos_table.search(Tipo.id == tipo_id)
+    tipo_doc = tipos_table.get(Tipo.id == tipo_id)
     if not tipo_doc:
         return False
-    nome = tipo_doc[0]["nome"]
+    nome = tipo_doc["nome"]
     usados = produtos_table.search(Produto.tipo == nome)
     return len(usados) > 0
 
@@ -228,19 +234,19 @@ def inserir_cocktail(nome, tacaria, receita, ingredientes):
     'ingredientes' é uma lista de tuplas (produto_id, quantidade_ml).
     Retorna o ID do cocktail criado.
     """
-    with db_lock:
-        new_id = _next_id(cocktails_table)
-        cocktails_table.insert({
+    new_id = _next_id(cocktails_table)
+    cocktails_table.insert(
+        {
             "id": new_id,
             "nome": nome,
             "tacaria": tacaria,
             "receita": receita,
             "ingredientes": [
-                {"produto_id": pid, "quantidade_ml": qtd}
-                for pid, qtd in ingredientes
+                {"produto_id": pid, "quantidade_ml": qtd} for pid, qtd in ingredientes
             ],
-        })
-        return new_id
+        }
+    )
+    return new_id
 
 
 def listar_cocktails(produtos=None, cocktails=None):
@@ -256,18 +262,22 @@ def listar_cocktails(produtos=None, cocktails=None):
     for c in cocktails:
         ings = []
         for ing in c.get("ingredientes", []):
-            ings.append({
-                "produto_id": ing["produto_id"],
-                "produto": produtos_map.get(ing["produto_id"], "???"),
-                "quantidade_ml": ing["quantidade_ml"],
-            })
-        resultado.append({
-            "id": c["id"],
-            "nome": c["nome"],
-            "tacaria": c["tacaria"],
-            "receita": c["receita"],
-            "ingredientes": ings,
-        })
+            ings.append(
+                {
+                    "produto_id": ing["produto_id"],
+                    "produto": produtos_map.get(ing["produto_id"], "???"),
+                    "quantidade_ml": ing["quantidade_ml"],
+                }
+            )
+        resultado.append(
+            {
+                "id": c["id"],
+                "nome": c["nome"],
+                "tacaria": c["tacaria"],
+                "receita": c["receita"],
+                "ingredientes": ings,
+            }
+        )
     return resultado
 
 
@@ -641,12 +651,25 @@ def editar_cocktail(cocktail_id):
         if erro:
             flash(erro, "erro")
             ings_form = _extrair_ingredientes_form(produto_ids, quantidades)
+            ings_form = []
+            for pid_txt, qtd_txt in zip(produto_ids, quantidades):
+                pid_txt = (pid_txt or "").strip()
+                qtd_txt = (qtd_txt or "").strip()
+                if pid_txt or qtd_txt:
+                    ings_form.append(
+                        {
+                            "produto_id": int(pid_txt) if pid_txt.isdigit() else 0,
+                            "quantidade_ml": qtd_txt,
+                        }
+                    )
             return render_template(
                 "editar_cocktail.html",
                 cocktail=cock,
                 produtos=produtos,
                 form={"nome": nome, "tacaria": tacaria, "receita": receita},
-                ingredientes_form=ings_form if ings_form else cock.get("ingredientes", []),
+                ingredientes_form=(
+                    ings_form if ings_form else cock.get("ingredientes", [])
+                ),
                 ativo="receitas",
             )
 
@@ -659,6 +682,15 @@ def editar_cocktail(cocktail_id):
 
         flash(f"Receita '{nome}' atualizada com sucesso!", "sucesso")
         return redirect(url_for("visualizar_cocktails"))
+
+    ings_with_names = []
+    for ing in cock.get("ingredientes", []):
+        ings_with_names.append(
+            {
+                "produto_id": ing["produto_id"],
+                "quantidade_ml": ing["quantidade_ml"],
+            }
+        )
 
     return render_template(
         "editar_cocktail.html",
