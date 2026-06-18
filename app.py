@@ -584,7 +584,7 @@ def visualizar_cocktails():
         if valor.isdigit():
             selecionados.add(int(valor))
 
-    cocktails = listar_cocktails()
+    cocktails = listar_cocktails(produtos=produtos)
     if selecionados:
         cocktails = [
             c
