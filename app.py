@@ -717,18 +717,47 @@ def _validar(produto, tipo, volume_txt, tipos_validos=None):
     return None
 
 
+def _validar_campos_basicos_cocktail(nome, tacaria, receita):
+    """Valida os campos básicos do cocktail."""
+    if not nome:
+        return "O campo 'Nome do coquetel' é obrigatório."
+    if len(nome) > MAX_NOME:
+        return f"'Nome do coquetel' deve ter no máximo {MAX_NOME} caracteres."
+    if not tacaria:
+        return "O campo 'Taçaria' é obrigatório."
+    if len(tacaria) > MAX_TACARIA:
+        return f"'Taçaria' deve ter no máximo {MAX_TACARIA} caracteres."
+    if not receita:
+        return "O campo 'Receita' é obrigatório."
+    return None
+
+
+def _validar_ingrediente(pid_txt, qtd_txt, ids_validos):
+    """Valida um único ingrediente e retorna (erro, (pid, qtd))."""
+    if not pid_txt:
+        return "Selecione o produto de todos os ingredientes.", None
+    try:
+        pid = int(pid_txt)
+    except ValueError:
+        return "Ingrediente inválido.", None
+    if pid not in ids_validos:
+        return "Ingrediente inválido: produto não cadastrado.", None
+    if not qtd_txt:
+        return "Informe a quantidade (ml) de cada ingrediente.", None
+    try:
+        qtd = float(qtd_txt)
+    except ValueError:
+        return "'Quantidade' deve ser um número (ml).", None
+    if qtd <= 0 or qtd > MAX_QUANTIDADE:
+        return f"'Quantidade' deve ser maior que 0 e ate {int(MAX_QUANTIDADE)}.", None
+    return None, (pid, qtd)
+
+
 def _validar_cocktail(nome, tacaria, receita, produto_ids, quantidades, produtos):
     """Valida os dados do cocktail."""
-    if not nome:
-        return "O campo 'Nome do coquetel' é obrigatório.", []
-    if len(nome) > MAX_NOME:
-        return f"'Nome do coquetel' deve ter no máximo {MAX_NOME} caracteres.", []
-    if not tacaria:
-        return "O campo 'Taçaria' é obrigatório.", []
-    if len(tacaria) > MAX_TACARIA:
-        return f"'Taçaria' deve ter no máximo {MAX_TACARIA} caracteres.", []
-    if not receita:
-        return "O campo 'Receita' é obrigatório.", []
+    erro = _validar_campos_basicos_cocktail(nome, tacaria, receita)
+    if erro:
+        return erro, []
 
     ids_validos = {p["id"] for p in produtos}
     ingredientes = []
@@ -737,23 +766,11 @@ def _validar_cocktail(nome, tacaria, receita, produto_ids, quantidades, produtos
         qtd_txt = (qtd_txt or "").strip().replace(",", ".")
         if not pid_txt and not qtd_txt:
             continue
-        if not pid_txt:
-            return "Selecione o produto de todos os ingredientes.", []
-        try:
-            pid = int(pid_txt)
-        except ValueError:
-            return "Ingrediente inválido.", []
-        if pid not in ids_validos:
-            return "Ingrediente inválido: produto não cadastrado.", []
-        if not qtd_txt:
-            return "Informe a quantidade (ml) de cada ingrediente.", []
-        try:
-            qtd = float(qtd_txt)
-        except ValueError:
-            return "'Quantidade' deve ser um número (ml).", []
-        if qtd <= 0 or qtd > MAX_QUANTIDADE:
-            return f"'Quantidade' deve ser maior que 0 e ate {int(MAX_QUANTIDADE)}.", []
-        ingredientes.append((pid, qtd))
+
+        erro, ingrediente = _validar_ingrediente(pid_txt, qtd_txt, ids_validos)
+        if erro:
+            return erro, []
+        ingredientes.append(ingrediente)
 
     if not ingredientes:
         return "Adicione pelo menos um ingrediente.", []
