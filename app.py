@@ -81,12 +81,21 @@ Cocktail = Query()
 # --------------------------------------------------------------------------- #
 # Camada de banco de dados (NoSQL / TinyDB)
 # --------------------------------------------------------------------------- #
+_MAX_ID_CACHE = {}
+
+
 def _next_id(table):
-    """Retorna o próximo ID sequencial para a tabela."""
-    all_docs = table.all()
-    if not all_docs:
-        return 1
-    return max(doc.get("id", 0) for doc in all_docs) + 1
+    """Retorna o próximo ID sequencial para a tabela utilizando cache."""
+    table_name = table.name
+    if table_name not in _MAX_ID_CACHE:
+        all_docs = table.all()
+        if not all_docs:
+            _MAX_ID_CACHE[table_name] = 0
+        else:
+            _MAX_ID_CACHE[table_name] = max(doc.get("id", 0) for doc in all_docs)
+
+    _MAX_ID_CACHE[table_name] += 1
+    return _MAX_ID_CACHE[table_name]
 
 
 def proximo_id():
@@ -97,12 +106,14 @@ def proximo_id():
 def inserir_produto(produto, tipo, volume_ml):
     """Insere um novo produto e retorna o ID gerado."""
     new_id = _next_id(produtos_table)
-    produtos_table.insert({
-        "id": new_id,
-        "produto": produto,
-        "tipo": tipo,
-        "volume_ml": volume_ml,
-    })
+    produtos_table.insert(
+        {
+            "id": new_id,
+            "produto": produto,
+            "tipo": tipo,
+            "volume_ml": volume_ml,
+        }
+    )
     return new_id
 
 
@@ -169,8 +180,7 @@ def atualizar_cocktail(cocktail_id, nome, tacaria, receita, ingredientes):
             "tacaria": tacaria,
             "receita": receita,
             "ingredientes": [
-                {"produto_id": pid, "quantidade_ml": qtd}
-                for pid, qtd in ingredientes
+                {"produto_id": pid, "quantidade_ml": qtd} for pid, qtd in ingredientes
             ],
         },
         Cocktail.id == cocktail_id,
@@ -224,16 +234,17 @@ def inserir_cocktail(nome, tacaria, receita, ingredientes):
     Retorna o ID do cocktail criado.
     """
     new_id = _next_id(cocktails_table)
-    cocktails_table.insert({
-        "id": new_id,
-        "nome": nome,
-        "tacaria": tacaria,
-        "receita": receita,
-        "ingredientes": [
-            {"produto_id": pid, "quantidade_ml": qtd}
-            for pid, qtd in ingredientes
-        ],
-    })
+    cocktails_table.insert(
+        {
+            "id": new_id,
+            "nome": nome,
+            "tacaria": tacaria,
+            "receita": receita,
+            "ingredientes": [
+                {"produto_id": pid, "quantidade_ml": qtd} for pid, qtd in ingredientes
+            ],
+        }
+    )
     return new_id
 
 
@@ -250,18 +261,22 @@ def listar_cocktails(produtos=None, cocktails=None):
     for c in cocktails:
         ings = []
         for ing in c.get("ingredientes", []):
-            ings.append({
-                "produto_id": ing["produto_id"],
-                "produto": produtos_map.get(ing["produto_id"], "???"),
-                "quantidade_ml": ing["quantidade_ml"],
-            })
-        resultado.append({
-            "id": c["id"],
-            "nome": c["nome"],
-            "tacaria": c["tacaria"],
-            "receita": c["receita"],
-            "ingredientes": ings,
-        })
+            ings.append(
+                {
+                    "produto_id": ing["produto_id"],
+                    "produto": produtos_map.get(ing["produto_id"], "???"),
+                    "quantidade_ml": ing["quantidade_ml"],
+                }
+            )
+        resultado.append(
+            {
+                "id": c["id"],
+                "nome": c["nome"],
+                "tacaria": c["tacaria"],
+                "receita": c["receita"],
+                "ingredientes": ings,
+            }
+        )
     return resultado
 
 
@@ -630,13 +645,20 @@ def editar_cocktail(cocktail_id):
                 pid_txt = (pid_txt or "").strip()
                 qtd_txt = (qtd_txt or "").strip()
                 if pid_txt or qtd_txt:
-                    ings_form.append({"produto_id": int(pid_txt) if pid_txt.isdigit() else 0, "quantidade_ml": qtd_txt})
+                    ings_form.append(
+                        {
+                            "produto_id": int(pid_txt) if pid_txt.isdigit() else 0,
+                            "quantidade_ml": qtd_txt,
+                        }
+                    )
             return render_template(
                 "editar_cocktail.html",
                 cocktail=cock,
                 produtos=produtos,
                 form={"nome": nome, "tacaria": tacaria, "receita": receita},
-                ingredientes_form=ings_form if ings_form else cock.get("ingredientes", []),
+                ingredientes_form=(
+                    ings_form if ings_form else cock.get("ingredientes", [])
+                ),
                 ativo="receitas",
             )
 
@@ -652,10 +674,12 @@ def editar_cocktail(cocktail_id):
 
     ings_with_names = []
     for ing in cock.get("ingredientes", []):
-        ings_with_names.append({
-            "produto_id": ing["produto_id"],
-            "quantidade_ml": ing["quantidade_ml"],
-        })
+        ings_with_names.append(
+            {
+                "produto_id": ing["produto_id"],
+                "quantidade_ml": ing["quantidade_ml"],
+            }
+        )
 
     return render_template(
         "editar_cocktail.html",
