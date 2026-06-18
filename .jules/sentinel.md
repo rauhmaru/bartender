@@ -1,7 +1,4 @@
-## 2024-06-17 - [Hardcoded Secret Key & Information Leakage]
-**Vulnerability:**
-1. Hardcoded `SECRET_KEY` fallback in `app.py`.
-2. Stack traces / exception details (`{exc}`) were leaked directly into user `flash` messages in `app.py` for multiple endpoints.
+## Security Journal
 
 **Learning:**
 The application was using a hardcoded secret key for development, but leaving it as a fallback in production if the environment variable is not set can lead to session hijacking.

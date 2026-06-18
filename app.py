@@ -63,6 +63,7 @@ MAX_VOLUME = 99999
 MAX_NOME = 60
 MAX_TACARIA = 40
 MAX_QUANTIDADE = 99999.0
+MAX_RECEITA = 5000
 
 app = Flask(__name__)
 # SECURITY: Use a secure random token if SECRET_KEY is not provided
@@ -822,6 +823,7 @@ def inject_limits():
         "MAX_NOME": MAX_NOME,
         "MAX_TACARIA": MAX_TACARIA,
         "MAX_QUANTIDADE": MAX_QUANTIDADE,
+        "MAX_RECEITA": MAX_RECEITA,
     }
 
 
