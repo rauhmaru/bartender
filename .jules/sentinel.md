@@ -16,3 +16,16 @@ Additionally, leaking raw database exceptions (`Exception as exc`) exposes the i
 - **Risk**: Without a limit on the request body size, the server is vulnerable to Denial of Service (DoS) attacks. Attackers can upload large files or send huge payloads, exhausting server memory and causing crashes.
 - **Fix**: Set `app.config['MAX_CONTENT_LENGTH'] = <size>` immediately after app initialization. Example for 16MB: `app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024`.
 - **Validation**: Write tests using `pytest` to send a payload slightly larger than the limit and ensure a `413 Request Entity Too Large` error is returned.
+## 2024-06-18 - [Race Condition in ID Generation (TOCTOU)]
+**Vulnerability:**
+Fetching the next sequential ID by querying all items and finding the maximum, then immediately inserting using that ID.
+
+**Learning:**
+In a multi-threaded web application context (like Flask), concurrent requests might read the exact same maximum ID at the same time, leading to duplicate sequential IDs or write collisions in the underlying database (TinyDB).
+
+**Prevention:**
+Introduce an explicit `threading.Lock` within the application logic. The operations of computing the next ID and the subsequent document insertion *must* be atomically wrapped within a `with lock:` context to ensure data consistency across multiple worker threads. This also applies to checks for record existence before an insertion.
+## 2026-06-18 - [Security Headers Enhancement]
+**Vulnerability:** Missing security headers on HTTP responses, potentially allowing for XSS, clickjacking, or MIME-sniffing attacks.
+**Learning:** Adding security headers in Flask can be easily done globally using an `@app.after_request` hook, which provides defense-in-depth across the entire application without needing to modify individual routes.
+**Prevention:** Implement the `@app.after_request` pattern to inject headers like `X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection`, and `Content-Security-Policy` into all responses by default.
