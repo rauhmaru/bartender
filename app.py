@@ -50,7 +50,7 @@ from flask import (
     request,
     url_for,
 )
-from tinydb import TinyDB, Query, where
+from tinydb import TinyDB, Query
 
 # Caminho do banco de dados: mesmo diretório do script.
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
