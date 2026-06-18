@@ -20,3 +20,7 @@ In a multi-threaded web application context (like Flask), concurrent requests mi
 
 **Prevention:**
 Introduce an explicit `threading.Lock` within the application logic. The operations of computing the next ID and the subsequent document insertion *must* be atomically wrapped within a `with lock:` context to ensure data consistency across multiple worker threads. This also applies to checks for record existence before an insertion.
+## 2026-06-18 - [Security Headers Enhancement]
+**Vulnerability:** Missing security headers on HTTP responses, potentially allowing for XSS, clickjacking, or MIME-sniffing attacks.
+**Learning:** Adding security headers in Flask can be easily done globally using an `@app.after_request` hook, which provides defense-in-depth across the entire application without needing to modify individual routes.
+**Prevention:** Implement the `@app.after_request` pattern to inject headers like `X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection`, and `Content-Security-Policy` into all responses by default.
