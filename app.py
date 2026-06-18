@@ -322,6 +322,7 @@ def index():
 def cadastrar():
     """Tela de cadastro de produto (GET) e processamento do envio (POST)."""
     tipos = listar_tipos()
+    proximo_id_str = f"{proximo_id():05d}"
     if request.method == "POST":
         produto = (request.form.get("produto") or "").strip()
         tipo = (request.form.get("tipo") or "").strip()
@@ -333,7 +334,7 @@ def cadastrar():
             flash(erro, "erro")
             return render_template(
                 "cadastrar.html",
-                proximo_id=f"{proximo_id():05d}",
+                proximo_id=proximo_id_str,
                 tipos=tipos,
                 form={"produto": produto, "tipo": tipo, "volume_ml": volume_txt},
                 ativo="produtos",
@@ -351,7 +352,7 @@ def cadastrar():
 
     return render_template(
         "cadastrar.html",
-        proximo_id=f"{proximo_id():05d}",
+        proximo_id=proximo_id_str,
         tipos=tipos,
         form={"produto": "", "tipo": "", "volume_ml": ""},
         ativo="produtos",
