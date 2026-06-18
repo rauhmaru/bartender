@@ -40,6 +40,7 @@ Variáveis de ambiente opcionais:
 
 import os
 import secrets
+import threading
 
 from flask import (
     Flask,
@@ -49,7 +50,7 @@ from flask import (
     request,
     url_for,
 )
-from tinydb import TinyDB, Query, where
+from tinydb import TinyDB, Query
 
 # Caminho do banco de dados: mesmo diretório do script.
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -131,12 +132,13 @@ def listar_tipos():
 
 def inserir_tipo(nome):
     """Insere um novo tipo. Levanta ValueError se já existir."""
-    existing = tipos_table.search(Tipo.nome == nome)
-    if existing:
-        raise ValueError(f"O tipo '{nome}' já está cadastrado.")
-    new_id = _next_id(tipos_table)
-    tipos_table.insert({"id": new_id, "nome": nome})
-    return new_id
+    with db_lock:
+        existing = tipos_table.search(Tipo.nome == nome)
+        if existing:
+            raise ValueError(f"O tipo '{nome}' já está cadastrado.")
+        new_id = _next_id(tipos_table)
+        tipos_table.insert({"id": new_id, "nome": nome})
+        return new_id
 
 
 def obter_produto(produto_id):
@@ -223,8 +225,7 @@ def tipo_em_uso(tipo_id):
     if not tipo_doc:
         return False
     nome = tipo_doc[0]["nome"]
-    usados = produtos_table.search(Produto.tipo == nome)
-    return len(usados) > 0
+    return produtos_table.contains(Produto.tipo == nome)
 
 
 def inserir_cocktail(nome, tacaria, receita, ingredientes):
@@ -299,6 +300,15 @@ def contar_coqueteis_possiveis(produtos=None, cocktails=None):
 # --------------------------------------------------------------------------- #
 # Rotas
 # --------------------------------------------------------------------------- #
+@app.after_request
+def add_security_headers(response):
+    """Adiciona headers de segurança (Security Enhancements)."""
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Content-Security-Policy'] = "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:;"
+    return response
+
 @app.route("/")
 def index():
     """Dashboard principal — Meu Bar."""
@@ -328,6 +338,7 @@ def index():
 def cadastrar():
     """Tela de cadastro de produto (GET) e processamento do envio (POST)."""
     tipos = listar_tipos()
+    proximo_id_str = f"{proximo_id():05d}"
     if request.method == "POST":
         produto = (request.form.get("produto") or "").strip()
         tipo = (request.form.get("tipo") or "").strip()
@@ -339,7 +350,7 @@ def cadastrar():
             flash(erro, "erro")
             return render_template(
                 "cadastrar.html",
-                proximo_id=f"{proximo_id():05d}",
+                proximo_id=proximo_id_str,
                 tipos=tipos,
                 form={"produto": produto, "tipo": tipo, "volume_ml": volume_txt},
                 ativo="produtos",
@@ -357,7 +368,7 @@ def cadastrar():
 
     return render_template(
         "cadastrar.html",
-        proximo_id=f"{proximo_id():05d}",
+        proximo_id=proximo_id_str,
         tipos=tipos,
         form={"produto": "", "tipo": "", "volume_ml": ""},
         ativo="produtos",
@@ -599,7 +610,7 @@ def visualizar_cocktails():
         if valor.isdigit():
             selecionados.add(int(valor))
 
-    cocktails = listar_cocktails()
+    cocktails = listar_cocktails(produtos=produtos)
     if selecionados:
         cocktails = [
             c
@@ -731,18 +742,47 @@ def _validar(produto, tipo, volume_txt, tipos_validos=None):
     return None
 
 
+def _validar_campos_basicos_cocktail(nome, tacaria, receita):
+    """Valida os campos básicos do cocktail."""
+    if not nome:
+        return "O campo 'Nome do coquetel' é obrigatório."
+    if len(nome) > MAX_NOME:
+        return f"'Nome do coquetel' deve ter no máximo {MAX_NOME} caracteres."
+    if not tacaria:
+        return "O campo 'Taçaria' é obrigatório."
+    if len(tacaria) > MAX_TACARIA:
+        return f"'Taçaria' deve ter no máximo {MAX_TACARIA} caracteres."
+    if not receita:
+        return "O campo 'Receita' é obrigatório."
+    return None
+
+
+def _validar_ingrediente(pid_txt, qtd_txt, ids_validos):
+    """Valida um único ingrediente e retorna (erro, (pid, qtd))."""
+    if not pid_txt:
+        return "Selecione o produto de todos os ingredientes.", None
+    try:
+        pid = int(pid_txt)
+    except ValueError:
+        return "Ingrediente inválido.", None
+    if pid not in ids_validos:
+        return "Ingrediente inválido: produto não cadastrado.", None
+    if not qtd_txt:
+        return "Informe a quantidade (ml) de cada ingrediente.", None
+    try:
+        qtd = float(qtd_txt)
+    except ValueError:
+        return "'Quantidade' deve ser um número (ml).", None
+    if qtd <= 0 or qtd > MAX_QUANTIDADE:
+        return f"'Quantidade' deve ser maior que 0 e ate {int(MAX_QUANTIDADE)}.", None
+    return None, (pid, qtd)
+
+
 def _validar_cocktail(nome, tacaria, receita, produto_ids, quantidades, produtos):
     """Valida os dados do cocktail."""
-    if not nome:
-        return "O campo 'Nome do coquetel' é obrigatório.", []
-    if len(nome) > MAX_NOME:
-        return f"'Nome do coquetel' deve ter no máximo {MAX_NOME} caracteres.", []
-    if not tacaria:
-        return "O campo 'Taçaria' é obrigatório.", []
-    if len(tacaria) > MAX_TACARIA:
-        return f"'Taçaria' deve ter no máximo {MAX_TACARIA} caracteres.", []
-    if not receita:
-        return "O campo 'Receita' é obrigatório.", []
+    erro = _validar_campos_basicos_cocktail(nome, tacaria, receita)
+    if erro:
+        return erro, []
 
     ids_validos = {p["id"] for p in produtos}
     ingredientes = []
@@ -751,23 +791,11 @@ def _validar_cocktail(nome, tacaria, receita, produto_ids, quantidades, produtos
         qtd_txt = (qtd_txt or "").strip().replace(",", ".")
         if not pid_txt and not qtd_txt:
             continue
-        if not pid_txt:
-            return "Selecione o produto de todos os ingredientes.", []
-        try:
-            pid = int(pid_txt)
-        except ValueError:
-            return "Ingrediente inválido.", []
-        if pid not in ids_validos:
-            return "Ingrediente inválido: produto não cadastrado.", []
-        if not qtd_txt:
-            return "Informe a quantidade (ml) de cada ingrediente.", []
-        try:
-            qtd = float(qtd_txt)
-        except ValueError:
-            return "'Quantidade' deve ser um número (ml).", []
-        if qtd <= 0 or qtd > MAX_QUANTIDADE:
-            return f"'Quantidade' deve ser maior que 0 e ate {int(MAX_QUANTIDADE)}.", []
-        ingredientes.append((pid, qtd))
+
+        erro, ingrediente = _validar_ingrediente(pid_txt, qtd_txt, ids_validos)
+        if erro:
+            return erro, []
+        ingredientes.append(ingrediente)
 
     if not ingredientes:
         return "Adicione pelo menos um ingrediente.", []
