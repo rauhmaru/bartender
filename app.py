@@ -67,6 +67,8 @@ MAX_QUANTIDADE = 99999.0
 app = Flask(__name__)
 # SECURITY: Use a secure random token if SECRET_KEY is not provided
 app.secret_key = os.environ.get("SECRET_KEY", secrets.token_hex(32))
+# SECURITY: Limit request body size to 16MB to prevent DoS attacks
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
 # TinyDB instance
 db = TinyDB(DB_PATH, indent=2)
