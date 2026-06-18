@@ -40,6 +40,7 @@ Variáveis de ambiente opcionais:
 
 import os
 import secrets
+import threading
 
 from flask import (
     Flask,
@@ -81,6 +82,8 @@ Cocktail = Query()
 # --------------------------------------------------------------------------- #
 # Camada de banco de dados (NoSQL / TinyDB)
 # --------------------------------------------------------------------------- #
+db_lock = threading.Lock()
+
 def _next_id(table):
     """Retorna o próximo ID sequencial para a tabela."""
     all_docs = table.all()
@@ -96,14 +99,15 @@ def proximo_id():
 
 def inserir_produto(produto, tipo, volume_ml):
     """Insere um novo produto e retorna o ID gerado."""
-    new_id = _next_id(produtos_table)
-    produtos_table.insert({
-        "id": new_id,
-        "produto": produto,
-        "tipo": tipo,
-        "volume_ml": volume_ml,
-    })
-    return new_id
+    with db_lock:
+        new_id = _next_id(produtos_table)
+        produtos_table.insert({
+            "id": new_id,
+            "produto": produto,
+            "tipo": tipo,
+            "volume_ml": volume_ml,
+        })
+        return new_id
 
 
 def listar_produtos():
@@ -120,12 +124,13 @@ def listar_tipos():
 
 def inserir_tipo(nome):
     """Insere um novo tipo. Levanta ValueError se já existir."""
-    existing = tipos_table.search(Tipo.nome == nome)
-    if existing:
-        raise ValueError(f"O tipo '{nome}' já está cadastrado.")
-    new_id = _next_id(tipos_table)
-    tipos_table.insert({"id": new_id, "nome": nome})
-    return new_id
+    with db_lock:
+        existing = tipos_table.search(Tipo.nome == nome)
+        if existing:
+            raise ValueError(f"O tipo '{nome}' já está cadastrado.")
+        new_id = _next_id(tipos_table)
+        tipos_table.insert({"id": new_id, "nome": nome})
+        return new_id
 
 
 def obter_produto(produto_id):
@@ -223,18 +228,19 @@ def inserir_cocktail(nome, tacaria, receita, ingredientes):
     'ingredientes' é uma lista de tuplas (produto_id, quantidade_ml).
     Retorna o ID do cocktail criado.
     """
-    new_id = _next_id(cocktails_table)
-    cocktails_table.insert({
-        "id": new_id,
-        "nome": nome,
-        "tacaria": tacaria,
-        "receita": receita,
-        "ingredientes": [
-            {"produto_id": pid, "quantidade_ml": qtd}
-            for pid, qtd in ingredientes
-        ],
-    })
-    return new_id
+    with db_lock:
+        new_id = _next_id(cocktails_table)
+        cocktails_table.insert({
+            "id": new_id,
+            "nome": nome,
+            "tacaria": tacaria,
+            "receita": receita,
+            "ingredientes": [
+                {"produto_id": pid, "quantidade_ml": qtd}
+                for pid, qtd in ingredientes
+            ],
+        })
+        return new_id
 
 
 def listar_cocktails(produtos=None, cocktails=None):
