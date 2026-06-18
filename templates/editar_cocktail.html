@@ -39,7 +39,7 @@
 
     <div class="campo">
       <label for="receita">Receita (modo de preparo)</label>
-      <textarea id="receita" name="receita" required
+      <textarea id="receita" name="receita" maxlength="{{ MAX_RECEITA }}" required
                 placeholder="Descreva como preparar o drink...">{{ form.receita }}</textarea>
     </div>
 
