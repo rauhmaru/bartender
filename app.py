@@ -284,6 +284,15 @@ def contar_coqueteis_possiveis(produtos=None, cocktails=None):
 # --------------------------------------------------------------------------- #
 # Rotas
 # --------------------------------------------------------------------------- #
+@app.after_request
+def add_security_headers(response):
+    """Adiciona headers de segurança (Security Enhancements)."""
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Content-Security-Policy'] = "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:;"
+    return response
+
 @app.route("/")
 def index():
     """Dashboard principal — Meu Bar."""
