@@ -130,8 +130,8 @@ def inserir_tipo(nome):
 
 def obter_produto(produto_id):
     """Retorna um produto pelo ID ou None."""
-    results = produtos_table.search(Produto.id == produto_id)
-    return results[0] if results else None
+    results = produtos_table.get(Produto.id == produto_id)
+    return results
 
 
 def atualizar_produto(produto_id, produto, tipo, volume_ml):
@@ -157,8 +157,8 @@ def remover_produto(produto_id):
 
 def obter_cocktail(cocktail_id):
     """Retorna um cocktail pelo ID ou None."""
-    results = cocktails_table.search(Cocktail.id == cocktail_id)
-    return results[0] if results else None
+    results = cocktails_table.get(Cocktail.id == cocktail_id)
+    return results
 
 
 def atualizar_cocktail(cocktail_id, nome, tacaria, receita, ingredientes):
@@ -184,8 +184,8 @@ def remover_cocktail(cocktail_id):
 
 def obter_tipo(tipo_id):
     """Retorna um tipo pelo ID ou None."""
-    results = tipos_table.search(Tipo.id == tipo_id)
-    return results[0] if results else None
+    results = tipos_table.get(Tipo.id == tipo_id)
+    return results
 
 
 def atualizar_tipo(tipo_id, nome):
