@@ -73,6 +73,8 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
 # TinyDB instance
 db = TinyDB(DB_PATH, indent=2)
+# SECURITY: Use a threading lock to prevent TOCTOU race conditions when calculating IDs and inserting items.
+db_lock = threading.Lock()
 produtos_table = db.table("produtos")
 tipos_table = db.table("tipos")
 cocktails_table = db.table("cocktails")
@@ -109,16 +111,17 @@ def proximo_id():
 
 def inserir_produto(produto, tipo, volume_ml):
     """Insere um novo produto e retorna o ID gerado."""
-    new_id = _next_id(produtos_table)
-    produtos_table.insert(
-        {
-            "id": new_id,
-            "produto": produto,
-            "tipo": tipo,
-            "volume_ml": volume_ml,
-        }
-    )
-    return new_id
+    with db_lock:
+        new_id = _next_id(produtos_table)
+        produtos_table.insert(
+            {
+                "id": new_id,
+                "produto": produto,
+                "tipo": tipo,
+                "volume_ml": volume_ml,
+            }
+        )
+        return new_id
 
 
 def listar_produtos():
@@ -151,23 +154,25 @@ def obter_produto(produto_id):
 
 def atualizar_produto(produto_id, produto, tipo, volume_ml):
     """Atualiza os campos de um produto existente."""
-    produtos_table.update(
-        {"produto": produto, "tipo": tipo, "volume_ml": volume_ml},
-        Produto.id == produto_id,
-    )
+    with db_lock:
+        produtos_table.update(
+            {"produto": produto, "tipo": tipo, "volume_ml": volume_ml},
+            Produto.id == produto_id,
+        )
 
 
 def remover_produto(produto_id):
     """Remove um produto pelo ID. Levanta ValueError se em uso."""
-    # Check if product is used in any cocktail
-    all_cocktails = cocktails_table.all()
-    for c in all_cocktails:
-        for ing in c.get("ingredientes", []):
-            if ing.get("produto_id") == produto_id:
-                raise ValueError(
-                    "Não é possível remover: o produto está em uso em uma ou mais receitas."
-                )
-    produtos_table.remove(Produto.id == produto_id)
+    with db_lock:
+        # Check if product is used in any cocktail
+        all_cocktails = cocktails_table.all()
+        for c in all_cocktails:
+            for ing in c.get("ingredientes", []):
+                if ing.get("produto_id") == produto_id:
+                    raise ValueError(
+                        "Não é possível remover: o produto está em uso em uma ou mais receitas."
+                    )
+        produtos_table.remove(Produto.id == produto_id)
 
 
 def obter_cocktail(cocktail_id):
@@ -177,22 +182,24 @@ def obter_cocktail(cocktail_id):
 
 def atualizar_cocktail(cocktail_id, nome, tacaria, receita, ingredientes):
     """Atualiza um cocktail existente com ingredientes embutidos."""
-    cocktails_table.update(
-        {
-            "nome": nome,
-            "tacaria": tacaria,
-            "receita": receita,
-            "ingredientes": [
-                {"produto_id": pid, "quantidade_ml": qtd} for pid, qtd in ingredientes
-            ],
-        },
-        Cocktail.id == cocktail_id,
-    )
+    with db_lock:
+        cocktails_table.update(
+            {
+                "nome": nome,
+                "tacaria": tacaria,
+                "receita": receita,
+                "ingredientes": [
+                    {"produto_id": pid, "quantidade_ml": qtd} for pid, qtd in ingredientes
+                ],
+            },
+            Cocktail.id == cocktail_id,
+        )
 
 
 def remover_cocktail(cocktail_id):
     """Remove um cocktail pelo ID."""
-    cocktails_table.remove(Cocktail.id == cocktail_id)
+    with db_lock:
+        cocktails_table.remove(Cocktail.id == cocktail_id)
 
 
 def obter_tipo(tipo_id):
@@ -202,21 +209,23 @@ def obter_tipo(tipo_id):
 
 def atualizar_tipo(tipo_id, nome):
     """Atualiza o nome de um tipo e propaga para os produtos que o usam."""
-    old = obter_tipo(tipo_id)
-    if not old:
-        raise ValueError("Tipo não encontrado.")
-    old_nome = old["nome"]
-    existing = tipos_table.search((Tipo.nome == nome) & (Tipo.id != tipo_id))
-    if existing:
-        raise ValueError(f"O tipo '{nome}' já está cadastrado.")
-    tipos_table.update({"nome": nome}, Tipo.id == tipo_id)
-    if old_nome != nome:
-        produtos_table.update({"tipo": nome}, Produto.tipo == old_nome)
+    with db_lock:
+        old = tipos_table.get(Tipo.id == tipo_id)
+        if not old:
+            raise ValueError("Tipo não encontrado.")
+        old_nome = old["nome"]
+        existing = tipos_table.search((Tipo.nome == nome) & (Tipo.id != tipo_id))
+        if existing:
+            raise ValueError(f"O tipo '{nome}' já está cadastrado.")
+        tipos_table.update({"nome": nome}, Tipo.id == tipo_id)
+        if old_nome != nome:
+            produtos_table.update({"tipo": nome}, Produto.tipo == old_nome)
 
 
 def remover_tipo(tipo_id):
     """Remove um tipo pelo ID."""
-    tipos_table.remove(Tipo.id == tipo_id)
+    with db_lock:
+        tipos_table.remove(Tipo.id == tipo_id)
 
 
 def tipo_em_uso(tipo_id):
@@ -235,19 +244,20 @@ def inserir_cocktail(nome, tacaria, receita, ingredientes):
     'ingredientes' é uma lista de tuplas (produto_id, quantidade_ml).
     Retorna o ID do cocktail criado.
     """
-    new_id = _next_id(cocktails_table)
-    cocktails_table.insert(
-        {
-            "id": new_id,
-            "nome": nome,
-            "tacaria": tacaria,
-            "receita": receita,
-            "ingredientes": [
-                {"produto_id": pid, "quantidade_ml": qtd} for pid, qtd in ingredientes
-            ],
-        }
-    )
-    return new_id
+    with db_lock:
+        new_id = _next_id(cocktails_table)
+        cocktails_table.insert(
+            {
+                "id": new_id,
+                "nome": nome,
+                "tacaria": tacaria,
+                "receita": receita,
+                "ingredientes": [
+                    {"produto_id": pid, "quantidade_ml": qtd} for pid, qtd in ingredientes
+                ],
+            }
+        )
+        return new_id
 
 
 def listar_cocktails(produtos=None, cocktails=None):
