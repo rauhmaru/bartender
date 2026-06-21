@@ -26,3 +26,7 @@ Introduce an explicit `threading.Lock` within the application logic. The operati
 **Vulnerability:** Missing security headers on HTTP responses, potentially allowing for XSS, clickjacking, or MIME-sniffing attacks.
 **Learning:** Adding security headers in Flask can be easily done globally using an `@app.after_request` hook, which provides defense-in-depth across the entire application without needing to modify individual routes.
 **Prevention:** Implement the `@app.after_request` pattern to inject headers like `X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection`, and `Content-Security-Policy` into all responses by default.
+## 2024-05-24 - Race Condition (TOC/TOU) in TinyDB ID Generation
+**Vulnerability:** A Time-of-Check to Time-of-Use (TOC/TOU) race condition existed because `db_lock` was referenced but undefined in `app.py`, causing a 500 error during `inserir_tipo`, and `_next_id` had no concurrency control. Simultaneous requests could generate duplicate IDs or corrupt data.
+**Learning:** Concurrent read-modify-write operations in Flask with a file-based NoSQL database like TinyDB require explicit synchronization. In this case, `_next_id` and `inserir_tipo` can be called concurrently, and since one calls the other, using `threading.Lock()` causes a deadlock. A reentrant lock (`threading.RLock()`) is necessary.
+**Prevention:** Always define and use `threading.RLock()` around state-changing database operations or ID caching functions in multi-threaded Flask servers to prevent race conditions and deadlocks.
