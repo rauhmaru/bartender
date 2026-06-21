@@ -25,7 +25,12 @@
   {% endfor %}
   <p class="vazio">{{ produtos|length }} produto(s) cadastrado(s).</p>
 {% else %}
-  <p class="vazio">Nenhum produto cadastrado.</p>
+  <div class="cta-section">
+    <div class="cta-icon" aria-hidden="true">&#128230;</div>
+    <div class="cta-title">Seu inventário está vazio</div>
+    <div class="cta-desc">Comece adicionando os produtos e ingredientes que você tem em casa.</div>
+    <a href="{{ url_for('cadastrar') }}" class="btn btn-gold">Cadastrar Primeiro Produto</a>
+  </div>
 {% endif %}
 
 <div class="acoes">

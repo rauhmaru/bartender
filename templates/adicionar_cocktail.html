@@ -47,12 +47,11 @@
     </div>
   </form>
   {% else %}
-  <p class="vazio" style="text-align: left;">
-    Nenhum produto cadastrado. Cadastre produtos antes de criar um coquetel,
-    pois os ingredientes têm origem nos produtos.
-  </p>
-  <div class="acoes">
-    <a class="btn btn-primary" href="{{ url_for('cadastrar') }}">Cadastrar produto</a>
+  <div class="cta-section">
+    <div class="cta-icon" aria-hidden="true">&#128230;</div>
+    <div class="cta-title">Adicione produtos primeiro</div>
+    <div class="cta-desc">Cadastre produtos no seu inventário antes de criar um coquetel, pois os ingredientes têm origem nos produtos.</div>
+    <a href="{{ url_for('cadastrar') }}" class="btn btn-gold">Cadastrar Produto</a>
   </div>
   {% endif %}
 </div>

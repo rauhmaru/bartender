@@ -63,6 +63,11 @@
     <p style="color: var(--text-secondary); font-size: 15px;">Não existem receitas com os ingredientes selecionados.</p>
   </div>
 {% else %}
-  <p class="vazio">Nenhum coquetel cadastrado.</p>
+  <div class="cta-section">
+    <div class="cta-icon" aria-hidden="true">&#127864;</div>
+    <div class="cta-title">Nenhuma receita ainda</div>
+    <div class="cta-desc">Crie sua primeira receita de coquetel combinando os ingredientes do seu inventário.</div>
+    <a href="{{ url_for('adicionar_cocktail') }}" class="btn btn-gold">Criar Primeira Receita</a>
+  </div>
 {% endif %}
 {% endblock %}
