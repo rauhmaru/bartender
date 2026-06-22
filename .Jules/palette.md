@@ -1,3 +1,7 @@
 ## 2026-06-17 - Adding aria-labels to dynamically generated form elements
 **Learning:** Dynamic form elements like "remove ingredient" buttons in lists or tables, where typical labels are insufficient or not directly associated, require proper `aria-label` tags for screen readers to explain what item exactly is being interacted with. Relying only on visual indicators like "x" or generic titles might not convey the specific context to screen reader users without proper labeling.
 **Action:** Always ensure that dynamically generated rows with actions (like delete, edit, or remove) contain descriptive text hidden from sight (using classes like `sr-only`) or use `aria-label` describing what is being targeted.
+
+## 2026-06-18 - Replacing generic empty states with actionable CTA sections
+**Learning:** Generic text-only empty states (e.g., using a `.vazio` class with "No items found") provide a poor user experience. It's much better to guide the user towards the next actionable step. By utilizing existing components like `.cta-section`, we can create visually appealing, actionable empty states without introducing new CSS. Additionally, decorative emojis used within these components must have `aria-hidden="true"` to prevent screen readers from reading them out loud confusingly.
+**Action:** When encountering generic empty states, convert them to actionable `.cta-section` blocks. Ensure any emojis within these blocks are explicitly marked with `aria-hidden="true"`.

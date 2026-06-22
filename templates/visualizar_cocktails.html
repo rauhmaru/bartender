@@ -59,10 +59,15 @@
   </p>
 {% elif filtro_ativo %}
   <div class="card" style="text-align: center; padding: 40px 20px;">
-    <div style="font-size: 48px; margin-bottom: 12px;">&#128533;</div>
+    <div style="font-size: 48px; margin-bottom: 12px;" aria-hidden="true">&#128533;</div>
     <p style="color: var(--text-secondary); font-size: 15px;">Não existem receitas com os ingredientes selecionados.</p>
   </div>
 {% else %}
-  <p class="vazio">Nenhum coquetel cadastrado.</p>
+  <div class="cta-section">
+    <div class="cta-icon" aria-hidden="true">&#127864;</div>
+    <div class="cta-title">Nenhum coquetel cadastrado</div>
+    <div class="cta-desc">Crie sua primeira receita de coquetel para começar a usar o sistema.</div>
+    <a href="{{ url_for('adicionar_cocktail') }}" class="btn btn-gold">Adicionar Receita</a>
+  </div>
 {% endif %}
 {% endblock %}
