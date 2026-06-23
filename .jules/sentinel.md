@@ -26,3 +26,7 @@ Introduce an explicit `threading.Lock` within the application logic. The operati
 **Vulnerability:** Missing security headers on HTTP responses, potentially allowing for XSS, clickjacking, or MIME-sniffing attacks.
 **Learning:** Adding security headers in Flask can be easily done globally using an `@app.after_request` hook, which provides defense-in-depth across the entire application without needing to modify individual routes.
 **Prevention:** Implement the `@app.after_request` pattern to inject headers like `X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection`, and `Content-Security-Policy` into all responses by default.
+## 2024-06-18 - [Missing CSRF Protection]
+**Vulnerability:** The application was lacking global Cross-Site Request Forgery (CSRF) protection on forms that make state-changing requests (POST), leaving users vulnerable to malicious actors submitting requests on their behalf.
+**Learning:** For a Flask app utilizing server-rendered Jinja2 forms, implementing CSRF globally via `Flask-WTF`'s `CSRFProtect` is the most robust standard way to defend against this. It must be paired with injecting `<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>` in every HTML `<form>` that makes `POST` requests.
+**Prevention:** Always initialize `CSRFProtect(app)` when building Flask apps with forms, and ensure all POST forms include the CSRF token. Use `pytest-flask` and a test client to verify that POST requests lacking the CSRF token return `400 Bad Request`.
