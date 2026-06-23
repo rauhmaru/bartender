@@ -71,6 +71,9 @@ app.secret_key = os.environ.get("SECRET_KEY", secrets.token_hex(32))
 # SECURITY: Limit request body size to 16MB to prevent DoS attacks
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
+# Lock for synchronous db operations
+db_lock = threading.RLock()
+
 # TinyDB instance
 db = TinyDB(DB_PATH, indent=2)
 produtos_table = db.table("produtos")
@@ -136,7 +139,8 @@ def listar_tipos():
 def inserir_tipo(nome):
     """Insere um novo tipo. Levanta ValueError se já existir."""
     with db_lock:
-        existing = tipos_table.search(Tipo.nome == nome)
+        # ⚡ Bolt: Use .contains() instead of .search() for existence check to short-circuit and avoid full table scan
+        existing = tipos_table.contains(Tipo.nome == nome)
         if existing:
             raise ValueError(f"O tipo '{nome}' já está cadastrado.")
         new_id = _next_id(tipos_table)
@@ -206,7 +210,8 @@ def atualizar_tipo(tipo_id, nome):
     if not old:
         raise ValueError("Tipo não encontrado.")
     old_nome = old["nome"]
-    existing = tipos_table.search((Tipo.nome == nome) & (Tipo.id != tipo_id))
+    # ⚡ Bolt: Use .contains() instead of .search() for existence check to short-circuit and avoid full table scan
+    existing = tipos_table.contains((Tipo.nome == nome) & (Tipo.id != tipo_id))
     if existing:
         raise ValueError(f"O tipo '{nome}' já está cadastrado.")
     tipos_table.update({"nome": nome}, Tipo.id == tipo_id)
@@ -225,8 +230,8 @@ def tipo_em_uso(tipo_id):
     if not tipo_doc:
         return False
     nome = tipo_doc["nome"]
-    usados = produtos_table.search(Produto.tipo == nome)
-    return len(usados) > 0
+    # ⚡ Bolt: Use .contains() instead of .search() for existence check to short-circuit and avoid full table scan
+    return produtos_table.contains(Produto.tipo == nome)
 
 
 def inserir_cocktail(nome, tacaria, receita, ingredientes):
