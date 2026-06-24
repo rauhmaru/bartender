@@ -24,11 +24,15 @@
   </div>
   {% endfor %}
   <p class="vazio">{{ produtos|length }} produto(s) cadastrado(s).</p>
+  <div class="acoes">
+    <a class="btn btn-secondary" href="{{ url_for('visualizar') }}">Atualizar lista</a>
+  </div>
 {% else %}
-  <p class="vazio">Nenhum produto cadastrado.</p>
+  <div class="cta-section">
+    <div class="cta-icon" aria-hidden="true">&#128230;</div>
+    <div class="cta-title">Inventário Vazio</div>
+    <div class="cta-desc">Adicione produtos ao seu estoque para começar a criar receitas.</div>
+    <a href="{{ url_for('cadastrar') }}" class="btn btn-gold">Adicionar Produto</a>
+  </div>
 {% endif %}
-
-<div class="acoes">
-  <a class="btn btn-secondary" href="{{ url_for('visualizar') }}">Atualizar lista</a>
-</div>
 {% endblock %}
