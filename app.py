@@ -73,6 +73,8 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
 # TinyDB instance
 db = TinyDB(DB_PATH, indent=2)
+# SECURITY: Global lock to prevent race conditions (TOC/TOU) in TinyDB read-modify-write ops
+db_lock = threading.RLock()
 produtos_table = db.table("produtos")
 tipos_table = db.table("tipos")
 cocktails_table = db.table("cocktails")
@@ -90,16 +92,17 @@ _MAX_ID_CACHE = {}
 
 def _next_id(table):
     """Retorna o próximo ID sequencial para a tabela utilizando cache."""
-    table_name = table.name
-    if table_name not in _MAX_ID_CACHE:
-        all_docs = table.all()
-        if not all_docs:
-            _MAX_ID_CACHE[table_name] = 0
-        else:
-            _MAX_ID_CACHE[table_name] = max(doc.get("id", 0) for doc in all_docs)
+    with db_lock:
+        table_name = table.name
+        if table_name not in _MAX_ID_CACHE:
+            all_docs = table.all()
+            if not all_docs:
+                _MAX_ID_CACHE[table_name] = 0
+            else:
+                _MAX_ID_CACHE[table_name] = max(doc.get("id", 0) for doc in all_docs)
 
-    _MAX_ID_CACHE[table_name] += 1
-    return _MAX_ID_CACHE[table_name]
+        _MAX_ID_CACHE[table_name] += 1
+        return _MAX_ID_CACHE[table_name]
 
 
 def proximo_id():
