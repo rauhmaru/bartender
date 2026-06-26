@@ -5,6 +5,8 @@
 
   {% if produtos %}
   <form method="post" action="{{ url_for('editar_cocktail', cocktail_id=cocktail.id) }}" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
     <div class="campo">
       <label for="nome">Nome do coquetel</label>
       <input type="text" id="nome" name="nome" maxlength="{{ MAX_NOME }}" required

@@ -40,6 +40,7 @@
         <form class="form-inline" method="post"
               action="{{ url_for('remover_cocktail_route', cocktail_id=c.id) }}"
               onsubmit="return confirm('Remover esta receita?');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
           <button type="submit" class="btn btn-danger btn-sm">Remover</button>
         </form>
       </div>
