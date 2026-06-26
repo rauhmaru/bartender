@@ -14,11 +14,11 @@
       <div class="inv-detail">{{ p.tipo }} &bull; {{ p.volume_ml }}ml</div>
     </div>
     <div class="inv-actions" style="display: flex; gap: 6px;">
-      <a href="{{ url_for('editar_produto', produto_id=p.id) }}" class="btn btn-gold btn-sm">Editar</a>
+      <a href="{{ url_for('editar_produto', produto_id=p.id) }}" class="btn btn-gold btn-sm" aria-label="Editar {{ p.produto }}">Editar</a>
       <form class="form-inline" method="post"
             action="{{ url_for('remover_produto_route', produto_id=p.id) }}"
             onsubmit="return confirm('Remover este produto?');">
-        <button type="submit" class="btn btn-danger btn-sm">Remover</button>
+        <button type="submit" class="btn btn-danger btn-sm" aria-label="Remover {{ p.produto }}">Remover</button>
       </form>
     </div>
   </div>
