@@ -3,6 +3,8 @@
 <div class="card">
   <h2>Cadastrar Produto</h2>
   <form method="post" action="{{ url_for('cadastrar') }}" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
     <div class="campo">
       <label for="produto">Produto</label>
       <input type="text" id="produto" name="produto"

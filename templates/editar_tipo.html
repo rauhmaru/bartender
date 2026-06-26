@@ -3,6 +3,8 @@
 <div class="card">
   <h2>Editar Tipo de Produto</h2>
   <form method="post" action="{{ url_for('editar_tipo', tipo_id=tipo_obj.id) }}" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
     <div class="campo">
       <label for="nome">Tipo de produto</label>
       <input type="text" id="nome" name="nome"
