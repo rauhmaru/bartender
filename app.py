@@ -255,15 +255,28 @@ def inserir_cocktail(nome, tacaria, receita, ingredientes):
     return new_id
 
 
-def listar_cocktails(produtos=None, cocktails=None):
+def listar_cocktails(produtos=None, cocktails=None, selecionados=None, limit=None):
     """Retorna os cocktails com nomes dos produtos nos ingredientes."""
     if produtos is None:
         produtos = produtos_table.all()
     if cocktails is None:
         cocktails = cocktails_table.all()
 
-    produtos_map = {p["id"]: p["produto"] for p in produtos}
+    # ⚡ Bolt: Apply filter before expensive data transformation and mapping
+    if selecionados:
+        cocktails = [
+            c
+            for c in cocktails
+            if selecionados <= {ing["produto_id"] for ing in c.get("ingredientes", [])}
+        ]
+
     cocktails = sorted(cocktails, key=lambda d: d.get("id", 0))
+
+    # ⚡ Bolt: Apply limit before expensive mapping to prevent unused allocations
+    if limit is not None:
+        cocktails = cocktails[:limit]
+
+    produtos_map = {p["id"]: p["produto"] for p in produtos}
     resultado = []
     for c in cocktails:
         ings = []
@@ -324,7 +337,8 @@ def index():
 
     total_itens = len(produtos)
     coqueteis_possiveis = contar_coqueteis_possiveis(produtos, cocktails_db)
-    cocktails = listar_cocktails(produtos, cocktails_db)
+    # ⚡ Bolt: Pass limit=6 to only map the required cocktails for display
+    cocktails = listar_cocktails(produtos, cocktails_db, limit=6)
 
     # Agrupar produtos por tipo
     tipos_unicos = sorted(set(p["tipo"] for p in produtos))
@@ -616,13 +630,8 @@ def visualizar_cocktails():
         if valor.isdigit():
             selecionados.add(int(valor))
 
-    cocktails = listar_cocktails(produtos=produtos)
-    if selecionados:
-        cocktails = [
-            c
-            for c in cocktails
-            if selecionados <= {ing["produto_id"] for ing in c["ingredientes"]}
-        ]
+    # ⚡ Bolt: Pass filter criteria directly to prevent unused mapping allocations
+    cocktails = listar_cocktails(produtos=produtos, selecionados=selecionados)
 
     return render_template(
         "visualizar_cocktails.html",
