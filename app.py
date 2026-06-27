@@ -616,13 +616,16 @@ def visualizar_cocktails():
         if valor.isdigit():
             selecionados.add(int(valor))
 
-    cocktails = listar_cocktails(produtos=produtos)
+    # ⚡ Bolt: Apply filters on raw data before expensive mapping/transformations to avoid unnecessary memory allocations
     if selecionados:
-        cocktails = [
-            c
-            for c in cocktails
-            if selecionados <= {ing["produto_id"] for ing in c["ingredientes"]}
+        raw_cocktails = cocktails_table.all()
+        filtered_cocktails = [
+            c for c in raw_cocktails
+            if selecionados <= {ing["produto_id"] for ing in c.get("ingredientes", [])}
         ]
+        cocktails = listar_cocktails(produtos=produtos, cocktails=filtered_cocktails)
+    else:
+        cocktails = listar_cocktails(produtos=produtos)
 
     return render_template(
         "visualizar_cocktails.html",
