@@ -5,3 +5,7 @@
 ## 2024-06-25 - Using actionable empty states for better UX
 **Learning:** Plain-text empty states (like "No products registered") leave users without clear guidance on what to do next. Users find it much easier to interact with the system when empty states include a clear Call-to-Action (CTA) that guides them to populate the empty list or section.
 **Action:** Always leverage the existing `.cta-section` component instead of generic plain-text `.vazio` classes for major list views (like inventory or recipes) to provide clear, actionable next steps when the content is empty.
+
+## 2024-10-24 - Navigation accessibility attributes
+**Learning:** Screen readers need context for active navigation links and decorative emojis.
+**Action:** Always add `aria-current="page"` to active links and `aria-hidden="true"` to purely decorative icons (like emojis) in navigation components.

@@ -374,14 +374,14 @@
   <nav class="drawer" id="drawer">
     <div class="drawer-header">SGDC</div>
     <div class="grupo-titulo">Navegação</div>
-    <a class="{{ 'ativo' if ativo == 'dashboard' else '' }}" href="{{ url_for('index') }}">Meu Bar</a>
+    <a class="{{ 'ativo' if ativo == 'dashboard' else '' }}" {{ 'aria-current="page"' if ativo == 'dashboard' else '' }} href="{{ url_for('index') }}">Meu Bar</a>
     <div class="grupo-titulo">Produtos</div>
-    <a class="{{ 'ativo' if ativo == 'produtos' and request.path == '/cadastrar' else '' }}" href="{{ url_for('cadastrar') }}">Cadastrar produtos</a>
-    <a class="{{ 'ativo' if ativo == 'tipos' else '' }}" href="{{ url_for('cadastrar_tipo') }}">Cadastrar tipo</a>
-    <a class="{{ 'ativo' if ativo == 'produtos' and request.path == '/visualizar' else '' }}" href="{{ url_for('visualizar') }}">Listar produtos</a>
+    <a class="{{ 'ativo' if ativo == 'produtos' and request.path == '/cadastrar' else '' }}" {{ 'aria-current="page"' if ativo == 'produtos' and request.path == '/cadastrar' else '' }} href="{{ url_for('cadastrar') }}">Cadastrar produtos</a>
+    <a class="{{ 'ativo' if ativo == 'tipos' else '' }}" {{ 'aria-current="page"' if ativo == 'tipos' else '' }} href="{{ url_for('cadastrar_tipo') }}">Cadastrar tipo</a>
+    <a class="{{ 'ativo' if ativo == 'produtos' and request.path == '/visualizar' else '' }}" {{ 'aria-current="page"' if ativo == 'produtos' and request.path == '/visualizar' else '' }} href="{{ url_for('visualizar') }}">Listar produtos</a>
     <div class="grupo-titulo">Receitas</div>
-    <a class="{{ 'ativo' if ativo == 'receitas' and 'adicionar' in request.path else '' }}" href="{{ url_for('adicionar_cocktail') }}">Cadastrar receitas</a>
-    <a class="{{ 'ativo' if ativo == 'receitas' and 'adicionar' not in request.path else '' }}" href="{{ url_for('visualizar_cocktails') }}">Visualizar receitas</a>
+    <a class="{{ 'ativo' if ativo == 'receitas' and 'adicionar' in request.path else '' }}" {{ 'aria-current="page"' if ativo == 'receitas' and 'adicionar' in request.path else '' }} href="{{ url_for('adicionar_cocktail') }}">Cadastrar receitas</a>
+    <a class="{{ 'ativo' if ativo == 'receitas' and 'adicionar' not in request.path else '' }}" {{ 'aria-current="page"' if ativo == 'receitas' and 'adicionar' not in request.path else '' }} href="{{ url_for('visualizar_cocktails') }}">Visualizar receitas</a>
   </nav>
 
   <!-- Header -->
@@ -403,17 +403,17 @@
 
   <!-- Bottom navigation -->
   <nav class="bottom-nav">
-    <a href="{{ url_for('index') }}" class="{{ 'ativo' if ativo == 'dashboard' else '' }}">
-      <span class="nav-icon">&#127864;</span>MEU BAR
+    <a href="{{ url_for('index') }}" class="{{ 'ativo' if ativo == 'dashboard' else '' }}" {{ 'aria-current="page"' if ativo == 'dashboard' else '' }}>
+      <span class="nav-icon" aria-hidden="true">&#127864;</span>MEU BAR
     </a>
-    <a href="{{ url_for('visualizar') }}" class="{{ 'ativo' if ativo == 'produtos' else '' }}">
-      <span class="nav-icon">&#128230;</span>PRODUTOS
+    <a href="{{ url_for('visualizar') }}" class="{{ 'ativo' if ativo == 'produtos' else '' }}" {{ 'aria-current="page"' if ativo == 'produtos' else '' }}>
+      <span class="nav-icon" aria-hidden="true">&#128230;</span>PRODUTOS
     </a>
-    <a href="{{ url_for('visualizar_cocktails') }}" class="{{ 'ativo' if ativo == 'receitas' else '' }}">
-      <span class="nav-icon">&#127865;</span>RECEITAS
+    <a href="{{ url_for('visualizar_cocktails') }}" class="{{ 'ativo' if ativo == 'receitas' else '' }}" {{ 'aria-current="page"' if ativo == 'receitas' else '' }}>
+      <span class="nav-icon" aria-hidden="true">&#127865;</span>RECEITAS
     </a>
-    <a href="{{ url_for('cadastrar_tipo') }}" class="{{ 'ativo' if ativo == 'tipos' else '' }}">
-      <span class="nav-icon">&#128218;</span>TIPOS
+    <a href="{{ url_for('cadastrar_tipo') }}" class="{{ 'ativo' if ativo == 'tipos' else '' }}" {{ 'aria-current="page"' if ativo == 'tipos' else '' }}>
+      <span class="nav-icon" aria-hidden="true">&#128218;</span>TIPOS
     </a>
   </nav>
 
