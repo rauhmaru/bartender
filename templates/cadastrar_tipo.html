@@ -37,7 +37,11 @@
     {% endfor %}
     <p class="vazio">{{ tipos|length }} tipo(s) cadastrado(s).</p>
   {% else %}
-    <p class="vazio">Nenhum tipo cadastrado.</p>
+    <div class="cta-section">
+      <div class="cta-icon" aria-hidden="true">&#128218;</div>
+      <h3 class="cta-title">Nenhum tipo cadastrado</h3>
+      <p class="cta-desc">Cadastre um tipo de produto acima para começar.</p>
+    </div>
   {% endif %}
 </div>
 {% endblock %}

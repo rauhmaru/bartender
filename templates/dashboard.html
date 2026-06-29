@@ -66,15 +66,19 @@
     {% endfor %}
   </div>
   {% else %}
-  <p class="vazio">Nenhum produto cadastrado.</p>
+  <div class="cta-section">
+    <div class="cta-icon" aria-hidden="true">&#128230;</div>
+    <h3 class="cta-title">Inventário vazio</h3>
+    <p class="cta-desc">Nenhum produto cadastrado no momento.</p>
+  </div>
   {% endif %}
 </div>
 
 <!-- CTA -->
 <div class="cta-section">
-  <div class="cta-icon">&#128722;</div>
-  <div class="cta-title">Faltando algo?</div>
-  <div class="cta-desc">Adicione novos produtos ao seu estoque para desbloquear mais receitas.</div>
+  <div class="cta-icon" aria-hidden="true">&#128722;</div>
+  <h3 class="cta-title">Faltando algo?</h3>
+  <p class="cta-desc">Adicione novos produtos ao seu estoque para desbloquear mais receitas.</p>
   <a href="{{ url_for('cadastrar') }}" class="btn btn-gold">Adicionar à Lista</a>
 </div>
 

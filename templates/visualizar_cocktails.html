@@ -64,9 +64,9 @@
   </div>
 {% else %}
   <div class="cta-section">
-    <div class="cta-icon">&#127864;</div>
-    <div class="cta-title">Nenhuma receita cadastrada</div>
-    <div class="cta-desc">Adicione suas primeiras receitas de coquetéis ao sistema.</div>
+    <div class="cta-icon" aria-hidden="true">&#127864;</div>
+    <h3 class="cta-title">Nenhuma receita cadastrada</h3>
+    <p class="cta-desc">Adicione suas primeiras receitas de coquetéis ao sistema.</p>
     <a href="{{ url_for('adicionar_cocktail') }}" class="btn btn-gold">Adicionar Receita</a>
   </div>
 {% endif %}
