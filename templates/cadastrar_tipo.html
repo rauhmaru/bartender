@@ -3,6 +3,7 @@
 <div class="card">
   <h2>Cadastrar Tipo de Produto</h2>
   <form method="post" action="{{ url_for('cadastrar_tipo') }}" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
     <div class="campo">
       <label for="nome">Tipo de produto</label>
       <input type="text" id="nome" name="nome"
@@ -30,6 +31,7 @@
         <form class="form-inline" method="post"
               action="{{ url_for('remover_tipo_route', tipo_id=t.id) }}"
               onsubmit="return confirm('Remover este tipo de produto?');">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
           <button type="submit" class="btn btn-danger btn-sm">Remover</button>
         </form>
       </div>
