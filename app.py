@@ -50,6 +50,7 @@ from flask import (
     request,
     url_for,
 )
+from flask_wtf.csrf import CSRFProtect
 from tinydb import TinyDB, Query
 
 # Caminho do banco de dados: mesmo diretório do script.
@@ -70,6 +71,9 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", secrets.token_hex(32))
 # SECURITY: Limit request body size to 16MB to prevent DoS attacks
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+
+# SECURITY: Enable global CSRF protection
+csrf = CSRFProtect(app)
 
 # TinyDB instance
 db = TinyDB(DB_PATH, indent=2)
