@@ -30,3 +30,15 @@ Introduce an explicit `threading.Lock` within the application logic. The operati
 **Vulnerability:** A Time-of-Check to Time-of-Use (TOC/TOU) race condition existed because `db_lock` was referenced but undefined in `app.py`, causing a 500 error during `inserir_tipo`, and `_next_id` had no concurrency control. Simultaneous requests could generate duplicate IDs or corrupt data.
 **Learning:** Concurrent read-modify-write operations in Flask with a file-based NoSQL database like TinyDB require explicit synchronization. In this case, `_next_id` and `inserir_tipo` can be called concurrently, and since one calls the other, using `threading.Lock()` causes a deadlock. A reentrant lock (`threading.RLock()`) is necessary.
 **Prevention:** Always define and use `threading.RLock()` around state-changing database operations or ID caching functions in multi-threaded Flask servers to prevent race conditions and deadlocks.
+## 2025-02-27 - [Missing CSRF Protection on Forms]
+**Vulnerability:**
+The application had multiple HTML forms that used `method="post"` to send state-changing requests, but these forms did not include a Cross-Site Request Forgery (CSRF) token.
+
+**Learning:**
+Without CSRF protection, an attacker could host a malicious website that submits forged requests to our application's endpoints (e.g., removing or editing products) on behalf of an authenticated or active user session.
+
+**Prevention:**
+1. Install and use the `Flask-WTF` library, which provides a `CSRFProtect` extension.
+2. Initialize `CSRFProtect(app)` globally in the Flask setup.
+3. Include the CSRF token in all POST forms within Jinja2 templates using `<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>`.
+4. Ensure CSRF protection is disabled (`WTF_CSRF_ENABLED = False`) in testing configurations so simulated POST requests pass successfully.
