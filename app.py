@@ -69,7 +69,7 @@ app = Flask(__name__)
 # SECURITY: Use a secure random token if SECRET_KEY is not provided
 app.secret_key = os.environ.get("SECRET_KEY", secrets.token_hex(32))
 # SECURITY: Limit request body size to 16MB to prevent DoS attacks
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
 
 # TinyDB instance
 db = TinyDB(DB_PATH, indent=2)
@@ -309,11 +309,14 @@ def contar_coqueteis_possiveis(produtos=None, cocktails=None):
 @app.after_request
 def add_security_headers(response):
     """Adiciona headers de segurança (Security Enhancements)."""
-    response.headers['X-Content-Type-Options'] = 'nosniff'
-    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
-    response.headers['X-XSS-Protection'] = '1; mode=block'
-    response.headers['Content-Security-Policy'] = "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:;"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:;"
+    )
     return response
+
 
 @app.route("/")
 def index():
@@ -616,13 +619,16 @@ def visualizar_cocktails():
         if valor.isdigit():
             selecionados.add(int(valor))
 
-    cocktails = listar_cocktails(produtos=produtos)
+    # ⚡ Bolt: Fetch all cocktails and apply filter BEFORE mapping product names
+    cocktails_db = cocktails_table.all()
     if selecionados:
-        cocktails = [
+        cocktails_db = [
             c
-            for c in cocktails
-            if selecionados <= {ing["produto_id"] for ing in c["ingredientes"]}
+            for c in cocktails_db
+            if selecionados <= {ing["produto_id"] for ing in c.get("ingredientes", [])}
         ]
+
+    cocktails = listar_cocktails(produtos=produtos, cocktails=cocktails_db)
 
     return render_template(
         "visualizar_cocktails.html",
@@ -807,6 +813,7 @@ def _validar_cocktail(nome, tacaria, receita, produto_ids, quantidades, produtos
         return "Adicione pelo menos um ingrediente.", []
     return None, ingredientes
 
+
 def _extrair_ingredientes_form(produto_ids, quantidades):
     """Extrai os ingredientes enviados no form para remontar a tela em caso de erro."""
     ings_form = []
@@ -814,9 +821,13 @@ def _extrair_ingredientes_form(produto_ids, quantidades):
         pid_txt = (pid_txt or "").strip()
         qtd_txt = (qtd_txt or "").strip()
         if pid_txt or qtd_txt:
-            ings_form.append({"produto_id": int(pid_txt) if pid_txt.isdigit() else 0, "quantidade_ml": qtd_txt})
+            ings_form.append(
+                {
+                    "produto_id": int(pid_txt) if pid_txt.isdigit() else 0,
+                    "quantidade_ml": qtd_txt,
+                }
+            )
     return ings_form
-
 
 
 @app.context_processor
